@@ -70,6 +70,10 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(24px, 3.4vw, 
 .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(122,115,255,.18); }
 .field select { min-width: 220px; }
 .field.grow { flex: 1 1 200px; }
+.seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg button { appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 500; padding: 5px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.seg button:hover { color: var(--fg); }
+.seg button.on { background: var(--accent); color: #fff; }
 .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
 .btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font: inherit; font-weight: 500; padding: 9px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
 .btn:hover { border-color: #3a4560; }
@@ -209,6 +213,13 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
         </div>
         <button class="btn ghost" id="f-reset" type="button">Restablecer</button>
         <div class="sep"></div>
+        <div class="field">
+          <label id="f-iva-l">Inversión Meta</label>
+          <div class="seg" id="f-iva" role="group" aria-labelledby="f-iva-l">
+            <button type="button" data-iva="1" class="on" aria-pressed="true" title="Gasto real cobrado a la tarjeta (facturación)">Con IVA 19%</button>
+            <button type="button" data-iva="0" aria-pressed="false" title="Gasto bruto reportado por el Administrador de anuncios">Sin IVA</button>
+          </div>
+        </div>
         <div class="field">
           <label for="f-ads">Inversión Ads manual</label>
           <input type="text" inputmode="numeric" id="f-ads" placeholder="Automático" style="width:150px">
@@ -440,8 +451,22 @@ const ENGINE = (() => {
       const fs = ls.reduce((s, l) => s + l.flete, 0);
       ls.forEach((l) => { l.dev = dev ? (fs ? (dev * l.flete) / fs : dev / ls.length) : 0; });
     });
-    return { lines, noDate, orders: byId.size };
+    // Los obsequios son parte de la oferta del producto principal de su orden: su recaudo,
+    // mercancía y fletes se suman a ese producto en vez de aparecer como producto aparte.
+    let gifts = 0;
+    const giftNames = new Set();
+    byId.forEach((ls) => {
+      const main = ls.filter((l) => !GIFT.test(norm(l.prod))).sort((a, b) => b.total - a.total)[0];
+      if (!main) return;
+      ls.forEach((l) => {
+        if (l === main || !GIFT.test(norm(l.prod))) return;
+        giftNames.add(l.prod);
+        l.giftOf = l.prod; l.prod = main.prod; gifts++;
+      });
+    });
+    return { lines, noDate, orders: byId.size, gifts, giftNames: [...giftNames] };
   }
+  const GIFT = /OBSEQUIO|REGALO|GRATIS|\bGIFT\b/;
 
   const META_H = {
     date: (h) => /^FECHA|^DIA$|^DAY$|^DATE|INICIO DEL INFORME|REPORTING STARTS/.test(h),
@@ -545,10 +570,11 @@ const ENGINE = (() => {
     return best;
   }
 
+  const IVA = 0.19;
   const div = (a, b) => (b ? a / b : null);
   const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 
-  // f: { prod: '__all' | nombre, from, to, adsOverride: number|null }
+  // f: { prod: '__all' | nombre, from, to, adsOverride: number|null, iva: boolean (por defecto true) }
   // mx: { camps, map: {campaña: producto|null} } o null si no hay reporte de métricas.
   function aggregate(lines, meta, f, mx) {
     const inRange = (d) => !!d && (!f.from || d >= f.from) && (!f.to || d <= f.to);
@@ -578,11 +604,16 @@ const ENGINE = (() => {
     const mSpendSel = csum(selCamps, (cp) => cp.spend);
     const mUnassigned = csum(camps.filter((cp) => !cp.prod), (cp) => cp.spend);
 
-    // Inversión = facturación (gasto real con IVA). Se reparte por producto según el gasto
-    // de sus campañas; sin métricas, según la facturación de pedidos recibidos.
+    // Inversión con IVA = facturación (gasto real de tarjeta); sin IVA = gasto de campañas.
+    // Si falta uno de los dos archivos, se deriva del otro con el IVA de 19%.
+    // Se reparte por producto según el gasto de sus campañas; sin métricas, según la
+    // facturación de pedidos recibidos.
     const metaR = meta.filter((m) => inRange(m.date));
     const billTotal = metaR.reduce((s, m) => s + m.amt, 0);
-    const adsTotal = meta.length ? billTotal : mSpendAll;
+    const withIva = f.iva !== false;
+    const adsTotal = withIva
+      ? (meta.length ? billTotal : mSpendAll * (1 + IVA))
+      : (camps.length ? mSpendAll : billTotal / (1 + IVA));
     const totAll = rangeLines.reduce((s, l) => s + l.total, 0);
     const totSel = sel.reduce((s, l) => s + l.total, 0);
     const shareSource = all ? null : mSpendAll ? 'metricas' : 'facturacion';
@@ -601,7 +632,7 @@ const ENGINE = (() => {
     return {
       ...c, desp: c.rec - c.can, ruta: c.rut + c.pen,
       fact, merc, fEnt, fDevIda, fRet, fletes, wallet, util,
-      ads, adsAuto, adsTotal, billTotal, share, shareSource, metaN: metaR.length,
+      ads, adsAuto, adsTotal, billTotal, withIva, share, shareSource, metaN: metaR.length,
       buys, ctr, campAuto, mSpendAll, mSpendSel, mUnassigned,
       checkouts: camps.length ? Math.round(csum(selCamps, (cp) => cp.checkouts)) : null,
       cpaMeta: buys ? mSpendSel / buys : null,
@@ -729,7 +760,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
-  const S = { dropi: null, meta: null, metaInfo: null, metrics: null, map: {}, handle: null, prod: '__all', current: null };
+  const S = { dropi: null, meta: null, metaInfo: null, metrics: null, map: {}, handle: null, prod: '__all', iva: true, current: null };
   const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
   const nf = (v, o) => v.toLocaleString('es-CO', o);
   const F = {
@@ -875,8 +906,15 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
   function filters() {
     let from = $('#f-from').value || null, to = $('#f-to').value || null;
     if (from && to && from > to) [from, to] = [to, from];
-    return { prod: S.prod, from, to, adsOverride: parseInput('#f-ads', false) };
+    return { prod: S.prod, from, to, adsOverride: parseInput('#f-ads', false), iva: S.iva };
   }
+  $('#f-iva').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-iva]');
+    if (!b) return;
+    S.iva = b.dataset.iva === '1';
+    $('#f-iva').querySelectorAll('[data-iva]').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
+    render();
+  });
   $('#f-prod').addEventListener('change', (e) => { S.prod = e.target.value; render(); });
   ['#f-from', '#f-to', '#f-ads', '#f-buys', '#f-ctr', '#f-camp'].forEach((id) => $(id).addEventListener('input', render));
   $('#f-reset').addEventListener('click', () => { resetFilters(); $('#f-ads').value = ''; render(); });
@@ -920,7 +958,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
 
     $('#k-util').textContent = fmt(a.util, 'cop');
     $('#k-util').className = 'k-val ' + (a.util >= 0 ? '' : 'bad');
-    $('#k-util-f').textContent = `Wallet ${fmt(a.wallet, 'cop')} − Ads ${fmt(a.ads, 'cop')}`;
+    $('#k-util-f').textContent = `Wallet ${fmt(a.wallet, 'cop')} − Ads ${fmt(a.ads, 'cop')} (${a.withIva ? 'con' : 'sin'} IVA)`;
     $('#k-margen').textContent = fmt(a.margen, 'pct');
     $('#k-efect').textContent = fmt(a.efect, 'pct');
     $('#k-efect-f').textContent = `${nf(a.ent)} entregados · ${nf(a.dev)} devueltos`;
@@ -955,9 +993,11 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     if (typeof ExcelJS === 'undefined') add('No cargó la librería de Excel (¿sin internet?). Abre la app con conexión para leer .xlsx y guardar.', 'error');
     if (!S.dropi || !a) return;
     if (!S.meta && !S.metrics) add('Sin archivos de Meta: la inversión es $0 salvo que escribas la "Inversión Ads manual". Utilidad, ROAS y CPA quedan incompletos.');
-    else if (!S.meta) add('Sin facturación de Meta: la inversión sale del gasto de campañas, que no incluye el IVA de 19%. La utilidad queda sobrestimada.');
+    else if (!S.meta && a.withIva) add('Sin facturación de Meta: el gasto con IVA se estima como gasto de campañas × 1,19.');
+    else if (!S.metrics && !a.withIva) add('Sin reporte de métricas: el gasto sin IVA se estima como facturación ÷ 1,19.');
     if (!S.metrics) add('Sin reporte de métricas: el gasto por producto se reparte según la facturación de sus pedidos. Compras Ads y CTR se escriben a mano.', 'info');
-    if (a.iva != null && a.mSpendAll) add(`Facturación ${F.cop(a.billTotal)} frente a gasto en campañas ${F.cop(a.mSpendAll)} (+${fmt(a.iva, 'pct')}: IVA 19% y ajustes). La utilidad usa la facturación.`, 'info');
+    if (a.iva != null && a.mSpendAll) add(`Facturación ${F.cop(a.billTotal)} frente a gasto en campañas ${F.cop(a.mSpendAll)} (+${fmt(a.iva, 'pct')}: IVA 19% y ajustes). Vista ${a.withIva ? 'con IVA: la utilidad usa la facturación' : 'sin IVA: la utilidad usa el gasto de campañas'}.`, 'info');
+    if (S.dropi.gifts) add(`${nf(S.dropi.gifts)} líneas de obsequio (${S.dropi.giftNames.join(', ')}) se suman al producto principal de su orden.`, 'info');
     if (a.mUnassigned > 0) add(`${F.cop(a.mUnassigned)} de gasto en campañas sin producto asignado: entra en el consolidado pero en ningún producto. Asígnalo en la tabla "Campañas Meta".`);
     if (a.partial) add(`El reporte de métricas cubre ${ENGINE.periodLabel(S.metrics.from, S.metrics.to)} sin desglose diario. Para el rango filtrado, su gasto y compras se prorratean por días.`);
     if (S.dropi.noDate) add(`${S.dropi.noDate} líneas de Dropi sin FECHA válida quedan fuera del cálculo.`);
@@ -978,7 +1018,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
       ['Mercancía', 'Costo de mercancía', 'cost', -a.merc],
       ['Fletes', 'Fletes (entregas + devoluciones)', 'cost', -a.fletes],
       ['Wallet', 'Ganancia wallet Dropi', 'total', a.wallet],
-      ['Ads', 'Inversión Meta Ads', 'cost', -a.ads],
+      ['Ads', `Inversión Meta Ads (${a.withIva ? 'con' : 'sin'} IVA)`, 'cost', -a.ads],
       ['Utilidad', 'Utilidad neta real', 'total', a.util],
     ];
     let run = 0;
@@ -1071,7 +1111,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
       ['Mercancía', a.merc, 'var(--cost)'],
       ['Fletes de entregas', a.fEnt, 'var(--cost)'],
       ['Fletes de devoluciones (ida + retorno)', a.fDevIda + a.fRet, 'var(--cost)'],
-      ['Meta Ads', a.ads, 'var(--cost)'],
+      [`Meta Ads (${a.withIva ? 'con' : 'sin'} IVA)`, a.ads, 'var(--cost)'],
       ['Utilidad', a.util, a.util >= 0 ? 'var(--ok)' : 'var(--bad)'],
     ].forEach(([name, total, c], i) => {
       const per = total / a.ent, pct = ticket ? per / ticket : null;
@@ -1108,7 +1148,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     const card = $('#camps-card');
     card.classList.toggle('hidden', !S.metrics);
     $('#prod-note').textContent = S.metrics
-      ? 'Clic en una fila para filtrar. El gasto facturado se reparte por producto según el gasto de sus campañas.'
+      ? 'Clic en una fila para filtrar. La inversión Meta se reparte por producto según el gasto de sus campañas.'
       : 'Clic en una fila para filtrar. El gasto de Meta se reparte según la facturación de pedidos recibidos de cada producto.';
     if (!S.metrics) return;
     const tb = $('#camp-table tbody'); tb.textContent = '';
