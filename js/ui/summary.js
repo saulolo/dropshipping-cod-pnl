@@ -5,7 +5,7 @@
   const { $, rich, chip } = PYL.ui.dom;
   const { nf, fmt, short } = PYL.core.format;
   const { periodLabel } = PYL.core.dates;
-  const { verdict } = PYL.core.diagnostics;
+  const { verdict, kpis } = PYL.core.diagnostics;
   const tooltip = PYL.ui.tooltip;
   const { toast } = PYL.ui.feedback;
 
@@ -25,7 +25,6 @@
   function init() {
     document.querySelectorAll('.kpis [data-tip]').forEach((n) => tooltip.attach(n, n.firstChild.textContent, TIPS[n.dataset.tip]));
     $('#story-copy').addEventListener('click', copyStory);
-    $('#story-print').addEventListener('click', () => window.print());
   }
 
   function renderHeader(a, x) {
@@ -47,6 +46,19 @@
     return (d > 0 ? '+' : '') + nf(d, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x';
   }
 
+  // Cambio de un KPI frente al periodo anterior: { level, text, title } o null sin base de comparación.
+  function delta(k, a, prev) {
+    const [, kind, up] = KPIS.find((x) => x[0] === k);
+    const now = a[k], before = prev && prev.a[k];
+    if (now == null || before == null || !isFinite(now) || !isFinite(before)) return null;
+    const d = now - before, flat = Math.abs(d) < (kind === 'cop' ? 1 : 0.0005);
+    return {
+      level: flat ? '' : (d > 0) === up ? 'ok' : 'bad',
+      text: `${flat ? '=' : d > 0 ? '▲' : '▼'} ${flat ? 'Igual' : deltaText(k, kind, now, before)}`,
+      title: `Periodo anterior (${periodLabel(prev.from, prev.to)}): ${fmt(before, kind)}`,
+    };
+  }
+
   // prev: { from, to, a } del periodo anterior o null. weeks: semanas de core.insights.weeks.
   function renderKpis(a, prev, weeks) {
     $('#k-util').textContent = fmt(a.util, 'cop');
@@ -60,28 +72,14 @@
     $('#k-cpa').textContent = fmt(a.cpa, 'cop');
     $('#k-cpa-max').textContent = fmt(a.cpaMax, 'cop');
 
-    chip('#c-util', a.util > 0 ? 'ok' : 'bad', a.util > 0 ? 'Positiva' : 'Pérdida');
-    if (a.margen != null) chip('#c-margen', a.margen >= 0.2 ? 'ok' : a.margen >= 0 ? 'warn' : 'bad', a.margen >= 0.2 ? 'Sano (≥ 20%)' : a.margen >= 0 ? 'Bajo meta de 20%' : 'Negativo'); else chip('#c-margen');
-    if (a.efect != null) chip('#c-efect', a.efect >= 0.7 ? 'ok' : a.efect >= 0.6 ? 'warn' : 'bad', a.efect >= 0.7 ? 'Sobre meta de 70%' : 'Bajo meta de 70%'); else chip('#c-efect');
-    if (!a.ads) chip('#c-roas', 'warn', 'Sin gasto Ads cargado');
-    else if (a.roas != null && a.roasEq != null && a.roasEq > 0) {
-      const h = a.roas / a.roasEq - 1;
-      chip('#c-roas', h >= 0.15 ? 'ok' : h >= 0 ? 'warn' : 'bad', h >= 0.15 ? 'Con holgura' : h >= 0 ? 'En el límite' : 'Bajo equilibrio');
-    } else chip('#c-roas', 'bad', 'Wallet negativa');
-    if (a.cpa != null && a.cpaMax != null && a.cpaMax > 0 && a.ads) {
-      const h = 1 - a.cpa / a.cpaMax;
-      chip('#c-cpa', h >= 0.15 ? 'ok' : h >= 0 ? 'warn' : 'bad', h >= 0.15 ? 'Con holgura' : h >= 0 ? 'En el límite' : 'Sobre el máximo');
-    } else chip('#c-cpa');
+    const st = kpis(a);
+    KPIS.forEach(([k]) => chip('#c-' + k, st[k]?.level, st[k]?.text));
 
-    KPIS.forEach(([k, kind, up]) => {
-      const node = $('#d-' + k), now = a[k], before = prev && prev.a[k];
-      if (now == null || before == null || !isFinite(now) || !isFinite(before)) { node.className = 'delta'; node.textContent = ''; node.title = ''; }
-      else {
-        const d = now - before, flat = Math.abs(d) < (kind === 'cop' ? 1 : 0.0005);
-        node.className = 'delta ' + (flat ? '' : (d > 0) === up ? 'ok' : 'bad');
-        node.textContent = `${flat ? '=' : d > 0 ? '▲' : '▼'} ${flat ? 'Igual' : deltaText(k, kind, now, before)} vs. periodo anterior`;
-        node.title = `Periodo anterior (${periodLabel(prev.from, prev.to)}): ${fmt(before, kind)}`;
-      }
+    KPIS.forEach(([k, kind]) => {
+      const node = $('#d-' + k), dl = delta(k, a, prev);
+      node.className = 'delta ' + (dl ? dl.level : '');
+      node.textContent = dl ? dl.text + ' vs. periodo anterior' : '';
+      node.title = dl ? dl.title : '';
       PYL.ui.trend.spark('#s-' + k, weeks.map((w) => ({ v: w.a[k], w })), kind, TIPS[k].h.replace(/^\S+\s/, ''));
     });
   }
@@ -124,5 +122,5 @@
     toast('Resumen copiado: pégalo en WhatsApp o en un correo.', 'ok');
   }
 
-  PYL.ui.summary = { init, renderHeader, renderKpis, renderProjection, renderStory };
+  PYL.ui.summary = { init, renderHeader, renderKpis, renderProjection, renderStory, TIPS, delta };
 })();

@@ -142,6 +142,24 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
 .modal p { margin: 0 0 18px; color: #c9cedb; }
 .modal .actions { justify-content: flex-end; }
 .hidden { display: none !important; }
+
+/* Botón del informe PDF (encabezado) */
+.btn-report { appearance: none; display: inline-flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 18px 12px 14px; border: 1px solid rgba(163,158,255,.5); border-radius: 12px; cursor: pointer; text-align: left; font: inherit; color: #fff;
+  background: linear-gradient(135deg, #7a73ff 0%, #5b54e8 55%, #4338ca 100%); box-shadow: 0 8px 24px rgba(91,84,232,.35), inset 0 1px 0 rgba(255,255,255,.18); transition: transform .15s, box-shadow .15s, filter .15s; }
+.btn-report:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(91,84,232,.5), inset 0 1px 0 rgba(255,255,255,.22); filter: brightness(1.06); }
+.btn-report:active { transform: translateY(0); }
+.btn-report:focus-visible { outline: 2px solid #c9c6ff; outline-offset: 3px; }
+.btn-report .ico { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.16); font-size: 18px; flex: none; }
+.btn-report b { display: block; font-weight: 600; font-size: 14px; }
+.btn-report small { display: block; font-size: 11px; color: rgba(255,255,255,.75); margin-top: 1px; }
+
+/* Firma del autor */
+.signature { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+.signature img { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+.signature div { display: flex; flex-direction: column; line-height: 1.3; }
+.signature small { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
+.signature b { font-weight: 600; color: var(--fg); }
+.signature span { font-size: 12px; color: var(--muted); }
 #dash { display: flex; flex-direction: column; gap: 20px; }
 
 @media (max-width: 560px) {
@@ -156,7 +174,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
 @media print {
   @page { margin: 12mm; }
   html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .upload, .notices, .filters, .savebar, #camps-card, #sim-card, .diag-btn, .story-actions, .toast, .tip { display: none !important; }
+  .upload, .notices, .filters, .savebar, .btn-report, #camps-card, #sim-card, .diag-btn, .story-actions, .toast, .tip { display: none !important; }
   .diag-panel { grid-template-rows: 1fr; opacity: 1; }
   .card, .proj { break-inside: avoid; }
   .wrap { padding: 0; }

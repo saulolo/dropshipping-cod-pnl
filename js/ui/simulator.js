@@ -8,7 +8,7 @@
   // [clave, etiqueta, formato, paso, rango (min, max) a partir del valor real]
   const LEVERS = [
     ['efect', 'Efectividad de entrega', 'pct', 0.01, (v) => [Math.min(0.3, v), Math.max(0.95, v)]],
-    ['cpa', 'CPA (Ads por entrega)', 'cop', 500, (v, b) => [0, Math.max(v * 2, b.cpaMax * 1.5, 20000)]],
+    ['ads', 'Inversión en Meta Ads', 'cop', 10000, (v) => [0, Math.max(v * 2, 100000)]],
     ['ticket', 'Ticket promedio cobrado', 'cop', 1000, (v) => [v * 0.6, v * 1.6]],
     ['merc', 'Mercancía por entrega', 'cop', 500, (v) => [v * 0.5, v * 1.5]],
   ];
@@ -48,7 +48,7 @@
     if (!base || !a.ads) { $('#sim-out').textContent = 'Necesitas pedidos entregados y gasto en Meta Ads en este filtro para simular.'; return; }
     LEVERS.forEach(([k, , kind, step, range]) => {
       const { inp, ref } = inputs[k];
-      setRange(inp, base[k], range(base[k], { cpaMax: a.cpaMax || 0 }), step);
+      setRange(inp, base[k], range(base[k]), step);
       inputs[k].start = +inp.value;
       ref.textContent = 'Real: ' + fmt(base[k], kind);
     });
@@ -72,7 +72,7 @@
     [
       ['Margen', fmt(r.margen, 'pct')],
       ['ROAS / equilibrio', `${fmt(r.roas, 'x')} / ${r.roasEq > 0 ? fmt(r.roasEq, 'x') : '—'}`],
-      ['CPA máximo', fmt(r.cpaMax, 'cop')],
+      ['CPA real / máximo', `${fmt(r.cpa, 'cop')} / ${fmt(r.cpaMax, 'cop')}`],
       ['CPA para margen 15%', r.cpaMeta > 0 ? fmt(r.cpaMeta, 'cop') : 'No alcanza'],
     ].forEach(([k, v]) => { const s = el('div'); s.append(el('small', null, k), el('b', null, v)); stats.appendChild(s); });
     out.append(big, stats);

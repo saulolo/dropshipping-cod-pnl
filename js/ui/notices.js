@@ -5,13 +5,14 @@
   const { nf, F, fmt } = PYL.core.format;
   const { periodLabel } = PYL.core.dates;
 
+  // Avisos como datos: [{ text, kind }] con kind '' | 'info' | 'error'.
   // a: agregado del filtro (null si no hay datos); data: { dropi, meta, metaInfo, metrics }.
-  function render(a, data) {
+  function list(a, data) {
     const { dropi, meta, metaInfo, metrics } = data;
-    const box = $('#notices'); box.textContent = '';
-    const add = (t, k) => box.appendChild(el('div', 'notice ' + (k || ''), t));
+    const out = [];
+    const add = (text, kind) => out.push({ text, kind: kind || '' });
     if (typeof ExcelJS === 'undefined') add('No cargó la librería de Excel (¿sin internet?). Abre la app con conexión para leer .xlsx y guardar.', 'error');
-    if (!dropi || !a) return;
+    if (!dropi || !a) return out;
     if (!meta && !metrics) add('Sin archivos de Meta: la inversión es $0 salvo que escribas la "Inversión Ads manual". Utilidad, ROAS y CPA quedan incompletos.');
     else if (!meta) add('Sin facturación de Meta: la inversión sale de las métricas de campañas (× 1,19 con IVA) y no se puede filtrar por fecha de cargo.');
     if (!metrics) add('Sin reporte de métricas: Compras Ads y CTR se escriben a mano.', 'info');
@@ -27,7 +28,13 @@
       const check = m.billed == null ? '' : Math.abs(m.billed - tot) < 1 ? ' Cuadra con el "Importe total facturado".' : ` Ojo: el "Importe total facturado" dice ${F.cop(m.billed)}.`;
       add(`Meta: gasto real ${F.cop(tot)} en ${nf(meta.length)} cargos. Se excluyen ${nf(m.depositsN)} recargas de saldo con tarjeta (${F.cop(m.depositsTotal)}).${check}`, 'info');
     }
+    return out;
   }
 
-  PYL.ui.notices = { render };
+  function render(a, data) {
+    const box = $('#notices'); box.textContent = '';
+    list(a, data).forEach((n) => box.appendChild(el('div', 'notice ' + n.kind, n.text)));
+  }
+
+  PYL.ui.notices = { list, render };
 })();

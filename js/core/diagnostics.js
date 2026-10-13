@@ -122,6 +122,16 @@
         '). El ROAS real (', b(x(a.roas)), ') igualó prácticamente el equilibrio de ', b(x(a.roasEq)),
         '. La pauta cubrió los costos pero no dejó ganancia libre. Palanca clave: vender combos para subir el ticket promedio o reducir devoluciones.'];
     }
+    // Ganancia con margen bajo la meta: mismo corte de 15% que el veredicto "Zona límite".
+    if (a.util > 0 && m < 0.15) {
+      const palanca = a.efect < 0.7
+        ? 'subir la efectividad de entrega: cada devolución menos ahorra dos fletes y reparte la misma pauta en más entregas.'
+        : 'bajar el CPA o subir el ticket promedio con combos.';
+      return ['🟡 ', b(`Rentable pero en zona límite con ${producto}:`), ' tu transportadora entregó al ', b(pct(a.efect)), sem,
+        ' y cada entrega te costó ', b(cop(a.cpa)), ' en publicidad, por debajo del máximo de ', b(cop(a.cpaMax)),
+        '. Tu ROAS real (', b(x(a.roas)), ') superó el equilibrio de ', b(x(a.roasEq)), ', pero el margen neto quedó en ', b(pct(m)),
+        ' (meta Nova: 15% a 20%), con una utilidad de ', b('+' + cop(a.util) + ' COP'), '. Hay ganancia, pero poca holgura para escalar. Palanca clave: ', palanca];
+    }
     if (a.util > 0) {
       return ['🚀 ', b(`Excelente rendimiento con ${producto}:`), ' tu transportadora cumplió con una efectividad de ', b(pct(a.efect)), sem,
         ', mientras que conseguir cada entrega te costó solo ', b(cop(a.cpa)), ', por debajo del margen máximo de ', b(cop(a.cpaMax)),
@@ -153,5 +163,26 @@
     return m >= 0.15 ? { level: 'ok', label: '🚀 Ganador' } : { level: 'warn', label: '🟡 Zona límite' };
   }
 
-  core.diagnostics = { funnel, cascade, story, verdict };
+  // Semáforo de las 5 tarjetas KPI: { util, margen, efect, roas, cpa } con { level, text } o null sin datos.
+  function kpis(a) {
+    const r = (level, text) => ({ level, text });
+    let roas = null, cpa = null;
+    if (!a.ads) roas = r('warn', 'Sin gasto Ads cargado');
+    else if (a.roas != null && a.roasEq != null && a.roasEq > 0) {
+      const h = a.roas / a.roasEq - 1;
+      roas = h >= 0.15 ? r('ok', 'Con holgura') : h >= 0 ? r('warn', 'En el límite') : r('bad', 'Bajo equilibrio');
+    } else roas = r('bad', 'Wallet negativa');
+    if (a.cpa != null && a.cpaMax != null && a.cpaMax > 0 && a.ads) {
+      const h = 1 - a.cpa / a.cpaMax;
+      cpa = h >= 0.15 ? r('ok', 'Con holgura') : h >= 0 ? r('warn', 'En el límite') : r('bad', 'Sobre el máximo');
+    }
+    return {
+      util: a.util > 0 ? r('ok', 'Positiva') : r('bad', 'Pérdida'),
+      margen: a.margen == null ? null : a.margen >= 0.2 ? r('ok', 'Sano (≥ 20%)') : a.margen >= 0 ? r('warn', 'Bajo meta de 20%') : r('bad', 'Negativo'),
+      efect: a.efect == null ? null : a.efect >= 0.7 ? r('ok', 'Sobre meta de 70%') : r(a.efect >= 0.6 ? 'warn' : 'bad', 'Bajo meta de 70%'),
+      roas, cpa,
+    };
+  }
+
+  core.diagnostics = { funnel, cascade, story, verdict, kpis };
 })();

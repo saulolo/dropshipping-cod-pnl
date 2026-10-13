@@ -4,6 +4,7 @@
   const { $, el } = PYL.ui.dom;
   const { fmt } = PYL.core.format;
   const { infoLabel } = PYL.ui.tooltip;
+  const { unitEconomics } = PYL.core.insights;
 
   // Explicación de cada concepto. li: [antes, palabra resaltada, clase, después].
   const TIPS = {
@@ -20,20 +21,12 @@
   function draw(a) {
     const tb = $('#unit-table tbody'); tb.textContent = '';
     if (!a.ent) { const tr = el('tr'); const td = el('td', 'muted', 'Sin pedidos entregados en este filtro.'); td.colSpan = 4; tr.appendChild(td); tb.appendChild(tr); return; }
-    const ticket = a.fact / a.ent;
-    // [concepto, total del periodo, color de la barra, clase de fila, tooltip]
-    [
-      ['Ticket promedio cobrado', a.fact, 'var(--accent)', '', TIPS.ticket],
-      ['Mercancía', a.merc, 'var(--cost)', '', TIPS.merc],
-      ['Fletes de entregas', a.fEnt, 'var(--cost)', '', TIPS.fEnt],
-      ['Fletes de devoluciones (ida + retorno)', a.fDevIda + a.fRet, 'var(--cost)', '', TIPS.fDev],
-      ['Margen Máximo para Publicidad (CPA Sostenible)', a.fact - a.merc - a.fEnt - a.fDevIda - a.fRet, 'var(--accent-2)', '', TIPS.cpa],
-      [`Meta Ads (${a.withIva ? 'con' : 'sin'} IVA)`, a.ads, 'var(--cost)', '', TIPS.ads],
-      ['Utilidad', a.util, a.util >= 0 ? 'var(--ok)' : 'var(--bad)', 'total', TIPS.util],
-    ].forEach(([name, total, c, kind, tip]) => {
-      const per = total / a.ent, pct = ticket ? per / ticket : null;
-      const tr = el('tr', kind || '');
-      const td1 = el('td'); td1.appendChild(infoLabel(name, tip));
+    // Color de la barra por concepto; la utilidad va en verde o rojo según su signo.
+    const COLOR = { ticket: 'var(--accent)', cpa: 'var(--accent-2)', util: a.util >= 0 ? 'var(--ok)' : 'var(--bad)' };
+    unitEconomics(a).forEach(({ key, name, total, per, pct }) => {
+      const c = COLOR[key] || 'var(--cost)', kind = key === 'util' ? 'total' : '';
+      const tr = el('tr', kind);
+      const td1 = el('td'); td1.appendChild(infoLabel(name, TIPS[key]));
       const td3 = el('td');
       const bar = el('span', 'cellbar'); bar.style.width = Math.max(2, Math.min(1, Math.abs(pct || 0)) * 80) + 'px'; bar.style.background = c;
       td3.append(bar, fmt(pct, 'pct'));

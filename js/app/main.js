@@ -8,6 +8,7 @@
   const { aggregate, products } = core.pnl;
 
   function render() {
+    $('#btn-report').classList.toggle('hidden', !S.dropi);
     if (!S.dropi) { ui.notices.render(null, S); $('#dash').classList.add('hidden'); return; }
     $('#dash').classList.remove('hidden');
     const f = app.filters.read();
@@ -17,7 +18,8 @@
     const lines = S.dropi.lines, meta = S.meta || [];
     const prev = core.insights.previous(lines, meta, f, mx);
     const weeks = core.insights.weeks(lines, meta, f, mx);
-    S.current = { a, x, f, weeks };
+    const prodRows = productRows(f, mx);
+    S.current = { a, x, f, weeks, prev, products: prodRows.filter((r) => r.key !== '__all') };
 
     ui.notices.render(a, S);
     app.filters.showAutoValues(a);
@@ -33,7 +35,7 @@
     ui.diagnosisPanel.render('#diag-table', '#diag-concl', core.diagnostics.funnel(a, x.producto));
     ui.unitTable.draw(a);
     ui.productsTable.draw({
-      rows: productRows(f, mx),
+      rows: prodRows,
       selected: S.prod,
       hasBilling: !!S.meta,
       onSelect: (key) => app.filters.selectProduct(key),
@@ -68,6 +70,7 @@
     app.filters.init();
     app.dataLoader.init();
     app.save.init();
+    app.report.init();
     ui.diagnosisPanel.bindToggles();
     ui.summary.init();
 

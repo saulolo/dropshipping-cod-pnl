@@ -10,15 +10,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/report.css">
 </head>
 <body>
 <div class="wrap">
 
-  <header>
-    <div class="eyebrow">P&amp;L contra entrega · Meta Ads + Dropi</div>
-    <h1 id="title">Carga tus reportes para auditar el periodo</h1>
-    <div class="badge lg hidden" id="verdict"></div>
-    <p class="take" id="take">Sube el reporte de órdenes de Dropi (.xlsx o .csv) y la facturación de Meta Ads (.csv). Todo se procesa en este navegador: los archivos no salen de tu computador.</p>
+  <header class="top">
+    <div class="top-main">
+      <div class="eyebrow">P&amp;L contra entrega · Meta Ads + Dropi</div>
+      <h1 id="title">Carga tus reportes para auditar el periodo</h1>
+      <div class="badge lg hidden" id="verdict"></div>
+      <p class="take" id="take">Sube el reporte de órdenes de Dropi (.xlsx o .csv) y la facturación de Meta Ads (.csv). Todo se procesa en este navegador: los archivos no salen de tu computador.</p>
+    </div>
+    <button class="btn-report hidden" id="btn-report" type="button">
+      <span class="ico" aria-hidden="true">📄</span>
+      <span><b>Descargar informe PDF</b><small>Análisis y plan de acción para compartir</small></span>
+    </button>
   </header>
 
   <section class="upload" aria-label="Carga de archivos">
@@ -117,7 +124,7 @@
             <p class="story" id="story"></p>
             <div class="actions story-actions">
               <button class="btn ghost" id="story-copy" type="button">📋 Copiar resumen</button>
-              <button class="btn ghost" id="story-print" type="button">🖨️ Imprimir / PDF</button>
+              <button class="btn ghost" id="story-report" type="button">📄 Informe PDF</button>
             </div>
           </div>
         </div>
@@ -224,7 +231,7 @@
 
     <section class="card savebar">
       <div>
-        <h2>Guardar registro</h2>
+        <h2>Guardar y compartir</h2>
         <div class="who" id="save-who"></div>
       </div>
       <div class="actions">
@@ -234,9 +241,20 @@
       </div>
     </section>
   </main>
+
+  <footer class="signature">
+    <img src="img/autor.png" alt="Logo de Saul Echeverri" width="44" height="44">
+    <div>
+      <small>Creado por</small>
+      <b>Ingeniero Saul Echeverri</b>
+      <span>saulolo@gmail.com</span>
+    </div>
+  </footer>
 </div>
 
 <div class="tip" id="tip"></div>
+<!-- Informe PDF: solo visible al imprimir (ui/report.js) -->
+<article class="report" id="report" aria-hidden="true"></article>
 <div class="toast" id="toast"></div>
 <div class="modal-bg" id="modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-h">
@@ -275,12 +293,14 @@
 <script src="js/ui/simulator.js"></script>
 <script src="js/ui/products-table.js"></script>
 <script src="js/ui/campaigns-table.js"></script>
+<script src="js/ui/report.js"></script>
 <script src="js/ui/presets.js"></script>
 <!-- App: estado, casos de uso y arranque (main.js va al final) -->
 <script src="js/app/state.js"></script>
 <script src="js/app/filters.js"></script>
 <script src="js/app/data-loader.js"></script>
 <script src="js/app/save.js"></script>
+<script src="js/app/report.js"></script>
 <script src="js/app/main.js"></script>
 </body>
 </html>
