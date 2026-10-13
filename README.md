@@ -126,6 +126,7 @@ Arriba ves el **veredicto** del filtro y cómo se reparte cada peso cobrado entr
 Cada tarjeta trae además:
 
 - **▲ / ▼ vs. periodo anterior:** compara con un rango de la misma duración justo antes. En verde si mejoró, en rojo si empeoró (en el CPA, bajar es mejorar). Pasa el mouse para ver las fechas y el valor anterior.
+- **Comparación justa con pedidos en ruta:** si hay pedidos sin cerrar, la tarjeta de utilidad agrega una segunda línea que compara las utilidades **proyectadas** de ambos periodos. Así un periodo reciente no se ve peor solo porque aún no ha cobrado todo.
 - **Mini-gráfica semanal:** la tendencia del indicador, semana a semana.
 - **Semáforo:** el punto de color con el estado frente a la meta.
 
@@ -231,7 +232,7 @@ flowchart LR
 
 | Métrica | 🟢 Sano | 🟡 Atención | 🔴 Alerta |
 |---|---|---|---|
-| Margen neto | ≥ 20% | 0% a 20% | Negativo |
+| Margen neto | ≥ 15% *(ideal 20%)* | −2% a 15% | < −2% |
 | Efectividad de entrega | ≥ 70% | 60% a 70% | < 60% |
 | ROAS frente al equilibrio | ≥ 15% por encima | Apenas por encima | Por debajo |
 | CPA frente al máximo | ≥ 15% por debajo | Apenas por debajo | Por encima |

@@ -77,6 +77,7 @@
   function indicators(d) {
     const { a, prev } = d;
     const st = D.kpis(a);
+    const fair = I.projectedVsPrevious(a, prev);
     const ref = {
       util: 'Mayor a $0',
       margen: '15% a 20%',
@@ -98,7 +99,10 @@
     return section('3', 'Indicadores clave', prev
       ? `La columna "vs. anterior" compara con ${periodLabel(prev.from, prev.to)}, un periodo de la misma duración justo antes.`
       : 'No hay un periodo anterior comparable (misma duración, justo antes) con pedidos cobrados.',
-    table(['Indicador y qué significa', 'Resultado', 'Referencia', 'Estado', 'vs. anterior'], rows, 'r-kpis'));
+    table(['Indicador y qué significa', 'Resultado', 'Referencia', 'Estado', 'vs. anterior'], rows, 'r-kpis'),
+    fair && richEl('p', 'r-note', ['Ojo: la utilidad de este periodo aún no incluye ', { b: `${nf(fair.ruta)} pedidos en ruta` },
+      '. Contándolos con la efectividad actual, la utilidad proyectada es ', { b: cop(fair.now) }, ' frente a ', { b: cop(fair.before) },
+      ` del periodo anterior proyectado (${fair.diff >= 0 ? '+' : ''}${short(fair.diff)}). Esa es la comparación más justa.`]));
   }
 
   function diagTable(diag) {

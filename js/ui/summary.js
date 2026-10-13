@@ -6,6 +6,7 @@
   const { nf, fmt, short } = PYL.core.format;
   const { periodLabel } = PYL.core.dates;
   const { verdict, kpis } = PYL.core.diagnostics;
+  const { projectedVsPrevious } = PYL.core.insights;
   const tooltip = PYL.ui.tooltip;
   const { toast } = PYL.ui.feedback;
 
@@ -80,8 +81,17 @@
       node.className = 'delta ' + (dl ? dl.level : '');
       node.textContent = dl ? dl.text + ' vs. periodo anterior' : '';
       node.title = dl ? dl.title : '';
+      if (k === 'util') renderProjectedDelta(a, prev);
       PYL.ui.trend.spark('#s-' + k, weeks.map((w) => ({ v: w.a[k], w })), kind, TIPS[k].h.replace(/^\S+\s/, ''));
     });
+  }
+
+  // Segunda línea de la tarjeta de utilidad: comparación justa contando los pedidos en ruta.
+  function renderProjectedDelta(a, prev) {
+    const node = $('#d-util-p'), c = projectedVsPrevious(a, prev);
+    node.className = 'delta sub ' + (c ? (c.diff >= 0 ? 'ok' : 'bad') : '');
+    node.textContent = c ? `${c.diff >= 0 ? '▲ +' : '▼ '}${short(c.diff)} contando ${nf(c.ruta)} en ruta` : '';
+    node.title = c ? `Utilidad proyectada: ${fmt(c.now, 'cop')} frente a ${fmt(c.before, 'cop')} del periodo anterior. Compara ambos periodos como si sus pedidos en ruta se entregaran con su efectividad actual.` : '';
   }
 
   // p: core.insights.projection(a) o null.

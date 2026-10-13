@@ -6,6 +6,8 @@
   const { nf, fmt } = core.format;
 
   const NO_DATA = 'Sin datos suficientes en este filtro.';
+  // Cortes de margen neto usados en todo el tablero: ±2% es equilibrio, 15% el mínimo sano y 20% el ideal.
+  const MARGIN = { even: 0.02, healthy: 0.15, ideal: 0.2 };
   const b = (text) => ({ b: text });
   const row = (name, desc, value, bench, dx) => ({ name, desc, value, bench, level: dx ? dx[0] : '', text: dx ? dx[1] : NO_DATA });
 
@@ -83,11 +85,11 @@
     if (!has) return { rows, conclusion: ['Sin facturación cobrada en este filtro: no hay cascada que diagnosticar.'] };
     const m = a.margen, flBad = flR >= 0.35, adsBad = adsW != null && adsW >= 1;
     let conclusion;
-    // El equilibrio va primero: un margen de ±3% se lee como tablas aunque la utilidad tenga signo.
-    if (Math.abs(m) <= 0.03) {
+    // El equilibrio va primero: un margen de ±2% se lee como tablas aunque la utilidad tenga signo.
+    if (Math.abs(m) <= MARGIN.even) {
       conclusion = ['⚖️ ', b('Punto de Equilibrio:'), ' la barra de Meta Ads absorbió prácticamente el 100% de lo generado en la Wallet (',
         b(P(adsW)), ' de la Wallet, margen ', b(fmt(m, 'pct')), '). El producto financió su aprendizaje a costo cero. Para pasarlo a verde: subir el ticket promedio vendiendo combos o reducir el CPA.'];
-    } else if (a.util > 0 && m >= 0.15) {
+    } else if (a.util > 0 && m >= MARGIN.healthy) {
       conclusion = ['🚀 ', b('Producto Ganador:'), ' excelente salud financiera. Tu retención en Wallet (', b(P(walR)),
         ') superó ampliamente la inversión en Ads (', b(P(adsR)), '), logrando que la barra de Utilidad cierre con un margen neto del ', b(P(m)),
         '. La combinación de fletes controlados y un CPA eficiente blindaron tu ganancia.'];
@@ -110,6 +112,7 @@
 
   // Historia ejecutiva: une las 5 tarjetas KPI en un párrafo según el escenario del filtro.
   function story(a, producto) {
+    const quien = producto === 'Consolidado' ? 'tu operación consolidada' : producto;
     if (!a.fact || !a.ent) return ['Aún no hay pedidos entregados y cobrados en este filtro para contar la historia del periodo.'];
     if (!a.ads) return ['Sin gasto en Meta Ads cargado: sube la facturación de Meta o ingresa la inversión para conectar ROAS y CPA con la utilidad.'];
     const pct = (v) => fmt(v, 'pct'), x = (v) => fmt(v, 'x'), cop = (v) => fmt(v, 'cop');
@@ -117,23 +120,23 @@
     const m = a.margen;
 
     // El equilibrio va primero: un margen de ±2% se lee como tablas aunque la utilidad tenga signo.
-    if (Math.abs(m) <= 0.02) {
+    if (Math.abs(m) <= MARGIN.even) {
       return ['⚖️ ', b('Operación en Punto de Equilibrio:'), ' tu negocio financió su aprendizaje a costo cero (', b(cop(a.util) + ' COP'),
         '). El ROAS real (', b(x(a.roas)), ') igualó prácticamente el equilibrio de ', b(x(a.roasEq)),
         '. La pauta cubrió los costos pero no dejó ganancia libre. Palanca clave: vender combos para subir el ticket promedio o reducir devoluciones.'];
     }
     // Ganancia con margen bajo la meta: mismo corte de 15% que el veredicto "Zona límite".
-    if (a.util > 0 && m < 0.15) {
+    if (a.util > 0 && m < MARGIN.healthy) {
       const palanca = a.efect < 0.7
         ? 'subir la efectividad de entrega: cada devolución menos ahorra dos fletes y reparte la misma pauta en más entregas.'
         : 'bajar el CPA o subir el ticket promedio con combos.';
-      return ['🟡 ', b(`Rentable pero en zona límite con ${producto}:`), ' tu transportadora entregó al ', b(pct(a.efect)), sem,
+      return ['🟡 ', b(`Rentable pero en zona límite con ${quien}:`), ' tu transportadora entregó al ', b(pct(a.efect)), sem,
         ' y cada entrega te costó ', b(cop(a.cpa)), ' en publicidad, por debajo del máximo de ', b(cop(a.cpaMax)),
         '. Tu ROAS real (', b(x(a.roas)), ') superó el equilibrio de ', b(x(a.roasEq)), ', pero el margen neto quedó en ', b(pct(m)),
         ' (meta Nova: 15% a 20%), con una utilidad de ', b('+' + cop(a.util) + ' COP'), '. Hay ganancia, pero poca holgura para escalar. Palanca clave: ', palanca];
     }
     if (a.util > 0) {
-      return ['🚀 ', b(`Excelente rendimiento con ${producto}:`), ' tu transportadora cumplió con una efectividad de ', b(pct(a.efect)), sem,
+      return ['🚀 ', b(`Excelente rendimiento con ${quien}:`), ' tu transportadora cumplió con una efectividad de ', b(pct(a.efect)), sem,
         ', mientras que conseguir cada entrega te costó solo ', b(cop(a.cpa)), ', por debajo del margen máximo de ', b(cop(a.cpaMax)),
         ' que permitía la oferta. Gracias a esto, tu ROAS real (', b(x(a.roas)), ') superó con éxito el equilibrio de ', b(x(a.roasEq)),
         ', logrando un margen neto del ', b(pct(m)), ' y una utilidad libre en tu bolsillo de ', b('+' + cop(a.util) + ' COP'), '.'];
@@ -158,9 +161,9 @@
   function verdict(util, fact) {
     if (!fact) return { level: '', label: 'Sin cobros' };
     const m = util / fact;
-    if (Math.abs(m) <= 0.02) return { level: 'warn', label: '⚖️ Equilibrio' };
+    if (Math.abs(m) <= MARGIN.even) return { level: 'warn', label: '⚖️ Equilibrio' };
     if (util < 0) return { level: 'bad', label: '🔻 En pérdida' };
-    return m >= 0.15 ? { level: 'ok', label: '🚀 Ganador' } : { level: 'warn', label: '🟡 Zona límite' };
+    return m >= MARGIN.healthy ? { level: 'ok', label: '🚀 Ganador' } : { level: 'warn', label: '🟡 Zona límite' };
   }
 
   // Semáforo de las 5 tarjetas KPI: { util, margen, efect, roas, cpa } con { level, text } o null sin datos.
@@ -178,7 +181,12 @@
     }
     return {
       util: a.util > 0 ? r('ok', 'Positiva') : r('bad', 'Pérdida'),
-      margen: a.margen == null ? null : a.margen >= 0.2 ? r('ok', 'Sano (≥ 20%)') : a.margen >= 0 ? r('warn', 'Bajo meta de 20%') : r('bad', 'Negativo'),
+      margen: a.margen == null ? null
+        : a.margen >= MARGIN.ideal ? r('ok', 'Ideal (≥ 20%)')
+        : a.margen >= MARGIN.healthy ? r('ok', 'Sano (15% a 20%)')
+        : a.margen > MARGIN.even ? r('warn', 'Bajo meta de 15%')
+        : a.margen >= -MARGIN.even ? r('warn', 'Equilibrio')
+        : r('bad', 'Negativo'),
       efect: a.efect == null ? null : a.efect >= 0.7 ? r('ok', 'Sobre meta de 70%') : r(a.efect >= 0.6 ? 'warn' : 'bad', 'Bajo meta de 70%'),
       roas, cpa,
     };

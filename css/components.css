@@ -10,6 +10,7 @@
 .delta { font-size: 12px; margin-top: 4px; font-variant-numeric: tabular-nums; color: var(--muted); cursor: default; }
 .delta:empty { display: none; }
 .delta.ok { color: var(--ok); } .delta.bad { color: var(--bad); }
+.delta.sub { margin-top: 1px; font-size: 11px; opacity: .85; }
 .spark { height: 30px; margin-top: 10px; }
 .spark:empty { display: none; }
 .spark svg { display: block; overflow: visible; }

@@ -35,6 +35,15 @@
     return out;
   }
 
+  // Utilidad proyectada (con pedidos en ruta) del periodo actual frente a la del anterior: la utilidad real
+  // de un periodo reciente se ve más baja solo porque aún no cobró todo. Null si no hay en ruta o no hay anterior.
+  function projectedVsPrevious(a, prev) {
+    const now = projection(a);
+    if (!now || !prev) return null;
+    const before = projection(prev.a)?.util ?? prev.a.util;
+    return { ruta: now.ruta, now: now.util, before, diff: now.util - before };
+  }
+
   // Pedidos en ruta: si cierran con la efectividad actual, cada entrega suma lo que hoy deja a la
   // Wallet por entrega (cpaMax, que ya descuenta las devoluciones). La pauta ya está pagada.
   function projection(a) {
@@ -152,5 +161,5 @@
     return out;
   }
 
-  core.insights = { previousRange, previous, weeks, projection, unitBase, simulate, unitEconomics, actions };
+  core.insights = { previousRange, previous, weeks, projection, projectedVsPrevious, unitBase, simulate, unitEconomics, actions };
 })();
