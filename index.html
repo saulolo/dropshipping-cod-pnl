@@ -104,15 +104,15 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(24px, 3.4vw, 
 
 /* Funnel */
 .funnel { display: flex; flex-direction: column; gap: 6px; }
-.f-row { display: grid; grid-template-columns: 7.5rem 1fr 3.5rem; gap: 10px; align-items: center; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.seg-sm button { font-size: 12px; padding: 4px 10px; }
+.f-row { display: grid; grid-template-columns: 11rem 1fr 3.8rem; gap: 10px; align-items: center; }
+.f-row.sub .f-name { padding-left: 14px; border-left: 2px solid var(--line); }
+.f-name small { display: block; font-size: 11px; color: var(--faint); line-height: 1.25; }
 .f-bar { height: 24px; border-radius: 5px; background: var(--bar-muted); transition: width .3s; }
 .f-val { text-align: right; font-variant-numeric: tabular-nums; }
-.f-loss { padding-left: calc(7.5rem + 10px); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.f-loss.worst { color: var(--bad); }
 .stack { display: flex; height: 14px; border-radius: 5px; overflow: hidden; margin-top: 18px; gap: 2px; background: var(--grid); }
 .stack div { transition: flex .3s; }
-.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 10px; font-variant-numeric: tabular-nums; }
-.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 
 /* Tables */
 .tablewrap { overflow-x: auto; }
@@ -125,6 +125,12 @@ tbody tr:last-child td { border-bottom: none; }
 #prod-table tbody tr { cursor: pointer; }
 #prod-table tbody tr:hover td { background: var(--panel-2); }
 #prod-table tbody tr.sel td { background: #161a33; }
+#prod-table th, #prod-table td { padding-left: 8px; padding-right: 8px; }
+#prod-table td { vertical-align: top; padding-top: 10px; padding-bottom: 10px; }
+#prod-table td:first-child { white-space: normal; min-width: 9rem; max-width: 15rem; font-weight: 500; }
+#prod-table .main { display: block; font-weight: 600; }
+#prod-table .sub { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--faint); }
+#prod-table .sub.ok { color: var(--ok); } #prod-table .sub.bad { color: var(--bad); }
 tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
 
 /* Notices / save */
@@ -150,8 +156,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
 #dash { display: flex; flex-direction: column; gap: 20px; }
 
 @media (max-width: 560px) {
-  .f-row { grid-template-columns: 5.5rem 1fr 3rem; }
-  .f-loss { padding-left: calc(5.5rem + 10px); }
+  .f-row { grid-template-columns: 8.5rem 1fr 3.4rem; }
   .field select { min-width: 0; width: 100%; }
   .field { flex: 1 1 100%; }
   .field input { width: 100% !important; }
@@ -260,11 +265,16 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
         <div class="chart" id="cascade"></div>
       </div>
       <div class="card">
-        <h2>Embudo logístico COD</h2>
+        <div class="card-head">
+          <h2>Embudo logístico COD</h2>
+          <div class="seg seg-sm" id="funnel-mode" role="group" aria-label="Ver embudo en">
+            <button type="button" data-mode="n" class="on" aria-pressed="true"># Unidades</button>
+            <button type="button" data-mode="pct" aria-pressed="false">% Porcentajes</button>
+          </div>
+        </div>
         <p class="note" id="funnel-note">Pedidos únicos de Dropi en el filtro actual.</p>
         <div class="funnel" id="funnel"></div>
         <div class="stack" id="stack"></div>
-        <div class="legend" id="legend"></div>
       </div>
     </section>
 
@@ -284,7 +294,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
       <p class="note" id="prod-note">Clic en una fila para filtrar.</p>
       <div class="tablewrap">
         <table id="prod-table">
-          <thead><tr><th>Producto</th><th>Recibidos</th><th>Entregados</th><th>Devueltos</th><th>Efectividad</th><th>Cobrado</th><th>Ads asignado</th><th>Wallet Dropi</th><th>Utilidad</th><th>Margen</th></tr></thead>
+          <thead><tr><th>Producto</th><th>Recibidos</th><th>Cancelados</th><th>Entregados</th><th>Devueltos</th><th>En ruta</th><th>Efectividad</th><th>Cobrado</th><th>Ads asignado</th><th>Wallet Dropi</th><th>Utilidad</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -887,7 +897,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);
-  const S = { dropi: null, meta: null, metaInfo: null, metrics: null, map: {}, handle: null, prod: '__all', iva: true, current: null };
+  const S = { dropi: null, meta: null, metaInfo: null, metrics: null, map: {}, handle: null, prod: '__all', iva: true, funnelMode: 'n', current: null };
   const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
   const nf = (v, o) => v.toLocaleString('es-CO', o);
   const F = {
@@ -1248,42 +1258,53 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
   }
   function hideTip() { $('#tip').style.display = 'none'; }
 
+  // Seis fases en orden; en vista % cada una se expresa sobre los pedidos recibidos.
   function drawFunnel(a) {
     const box = $('#funnel'); box.textContent = '';
+    const pctMode = S.funnelMode === 'pct';
     const steps = [
-      ['Recibidos', a.rec, null, null],
-      ['Despachados', a.desp, a.can, 'cancelados en confirmación'],
-      ['Entregados', a.ent, a.desp - a.ent, 'devueltos o en ruta'],
+      ['Recibidos', 'Entraron a Shopify', a.rec, '#3a4458', false],
+      ['Cancelados', 'Filtrados en confirmación', a.can, 'var(--warn)', false],
+      ['Despachados', 'Salieron con guía', a.desp, '#3a4458', false],
+      ['Entregados', 'Cobrados en efectivo', a.ent, 'var(--accent)', true],
+      ['Devueltos', 'Paquetes retornados', a.dev, 'var(--cost)', true],
+      ['En ruta', a.pen ? `Viajando · incluye ${nf(a.pen)} pendientes` : 'Viajando actualmente', a.ruta, '#56607a', true],
     ];
     const max = Math.max(1, a.rec);
-    const worst = Math.max(a.can, a.desp - a.ent);
-    steps.forEach(([name, val, loss, why], i) => {
-      if (loss != null) {
-        const prev = steps[i - 1][1];
-        box.appendChild(el('div', 'f-loss' + (loss === worst && worst > 0 ? ' worst' : ''), `↓ −${nf(loss)} ${why}${prev ? ` (${fmt(loss / prev, 'pct')})` : ''}`));
-      }
-      const row = el('div', 'f-row');
-      const bar = el('div', 'f-bar'); bar.style.width = (val / max) * 100 + '%';
-      if (i === steps.length - 1) bar.style.background = 'var(--accent)';
+    steps.forEach(([name, desc, val, color, sub]) => {
+      const share = a.rec ? val / a.rec : null;
+      const row = el('div', 'f-row' + (sub ? ' sub' : ''));
+      const label = el('div', 'f-name', name); label.appendChild(el('small', null, desc));
+      const bar = el('div', 'f-bar'); bar.style.width = (val / max) * 100 + '%'; bar.style.background = color;
       const track = el('div'); track.appendChild(bar);
-      row.append(el('div', null, name), track, el('div', 'f-val', nf(val)));
+      row.append(label, track, el('div', 'f-val', pctMode ? fmt(share, 'pct') : nf(val)));
+      row.addEventListener('mousemove', (ev) => showTip(ev, [name, `${nf(val)} pedidos`, `${fmt(share, 'pct')} de los recibidos`]));
+      row.addEventListener('mouseleave', hideTip);
       box.appendChild(row);
     });
     const parts = [['Entregados', a.ent, 'var(--accent)'], ['Devueltos', a.dev, 'var(--cost)'], ['En ruta', a.ruta, '#56607a']];
     const tot = parts.reduce((s, p) => s + p[1], 0) || 1;
-    const stack = $('#stack'), legend = $('#legend'); stack.textContent = ''; legend.textContent = '';
+    // Sin leyenda: las fases de arriba ya muestran estas cifras; el detalle queda en el tooltip.
+    const stack = $('#stack'); stack.textContent = '';
     parts.forEach(([label, v, c]) => {
       const seg = el('div'); seg.style.flex = String(v); seg.style.background = c;
-      seg.addEventListener('mousemove', (ev) => showTip(ev, [label, `${nf(v)} pedidos`, fmt(v / tot, 'pct') + ' de los no cancelados']));
+      seg.addEventListener('mousemove', (ev) => showTip(ev, [label, `${nf(v)} pedidos`, fmt(v / tot, 'pct') + ' de los despachados']));
       seg.addEventListener('mouseleave', hideTip);
       stack.appendChild(seg);
-      const it = el('span'); const sw = el('i'); sw.style.background = c;
-      it.append(sw, `${label} ${nf(v)} (${fmt(v / tot, 'pct')})`);
-      legend.appendChild(it);
     });
-    const metaTxt = a.buys != null ? `Meta reportó ${nf(a.buys)} compras (CPA Meta ${fmt(a.cpaMeta, 'cop')} sin IVA); Dropi recibió ${nf(a.rec)} pedidos. ` : 'Pedidos únicos de Dropi en el filtro. ';
-    $('#funnel-note').textContent = metaTxt + (a.pen ? `"En ruta" incluye ${nf(a.pen)} pendientes de confirmación.` : '');
+    const pct = S.funnelMode === 'pct';
+    $('#funnel-note').textContent = a.buys != null
+      ? (pct ? `Meta: ${nf(a.buys)} compras (CPA ${fmt(a.cpaMeta, 'cop')} sin IVA) · % sobre ${nf(a.rec)} recibidos.`
+        : `Meta reportó ${nf(a.buys)} compras (CPA Meta ${fmt(a.cpaMeta, 'cop')} sin IVA); Dropi recibió ${nf(a.rec)} pedidos.`)
+      : (pct ? `% sobre ${nf(a.rec)} pedidos recibidos.` : 'Pedidos únicos de Dropi en el filtro.');
   }
+  $('#funnel-mode').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (!b || !S.current) return;
+    S.funnelMode = b.dataset.mode;
+    $('#funnel-mode').querySelectorAll('[data-mode]').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
+    drawFunnel(S.current.a);
+  });
 
   function drawUnit(a) {
     const tb = $('#unit-table tbody'); tb.textContent = '';
@@ -1312,15 +1333,34 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     const rows = ENGINE.products(S.dropi.lines).map((p) => [p, p]);
     rows.push(['Todos / Consolidado', '__all']);
     const cls = (v, good, mid) => (v == null ? '' : v >= good ? 'ok' : v >= mid ? 'warn' : 'bad');
-    rows.forEach(([label, key], i) => {
+    // Celda de dos líneas: valor principal arriba, detalle pequeño abajo.
+    const cell = (main, sub, mainCls, subCls) => {
+      const td = el('td', mainCls);
+      td.appendChild(el('span', 'main', main));
+      if (sub != null) td.appendChild(el('span', 'sub ' + (subCls || ''), sub));
+      return td;
+    };
+    rows.forEach(([label, key]) => {
       const a = ENGINE.aggregate(S.dropi.lines, S.meta || [], { ...f, prod: key, adsOverride: null }, mx());
       const util = a.wallet - a.adsAuto, margen = a.fact ? util / a.fact : null;
+      const sign = util >= 0 ? 'ok' : 'bad';
+      const ofRec = (n) => fmt(a.rec ? n / a.rec : null, 'pct');
+      const adsSub = a.buys != null || a.ctr != null
+        ? `CPA: ${fmt(a.buys ? a.adsAuto / a.buys : null, 'cop')} · CTR: ${a.ctr == null ? '—' : nf(a.ctr, { maximumFractionDigits: 1 }) + '%'}`
+        : null;
       const tr = el('tr', (key === '__all' ? 'total ' : '') + (S.prod === key ? 'sel' : ''));
       tr.append(
-        el('td', null, label), el('td', null, nf(a.rec)), el('td', null, nf(a.ent)), el('td', null, nf(a.dev)),
-        el('td', cls(a.efect, 0.7, 0.6), fmt(a.efect, 'pct')), el('td', null, fmt(a.fact, 'cop')),
-        el('td', 'muted', fmt(a.adsAuto, 'cop')), el('td', null, fmt(a.wallet, 'cop')),
-        el('td', util >= 0 ? 'ok' : 'bad', fmt(util, 'cop')), el('td', cls(margen, 0.2, 0), fmt(margen, 'pct')),
+        el('td', null, label),
+        cell(nf(a.rec), null),
+        cell(nf(a.can), ofRec(a.can)),
+        cell(nf(a.ent), ofRec(a.ent)),
+        cell(nf(a.dev), ofRec(a.dev)),
+        cell(nf(a.ruta), ofRec(a.ruta)),
+        cell(fmt(a.efect, 'pct'), null, cls(a.efect, 0.7, 0.6)),
+        cell(fmt(a.fact, 'cop'), null),
+        cell(fmt(a.adsAuto, 'cop'), adsSub),
+        cell(fmt(a.wallet, 'cop'), null),
+        cell(fmt(util, 'cop'), margen == null ? null : `Margen ${fmt(margen, 'pct')}`, sign, sign),
       );
       tr.addEventListener('click', () => selectProduct(key));
       tb.appendChild(tr);
