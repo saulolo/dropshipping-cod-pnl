@@ -144,5 +144,14 @@
       b('Causa principal:'), ' ', ...causa];
   }
 
-  core.diagnostics = { funnel, cascade, story };
+  // Veredicto de una línea para encabezado y tabla de productos. Mismos cortes que la historia ejecutiva.
+  function verdict(util, fact) {
+    if (!fact) return { level: '', label: 'Sin cobros' };
+    const m = util / fact;
+    if (Math.abs(m) <= 0.02) return { level: 'warn', label: '⚖️ Equilibrio' };
+    if (util < 0) return { level: 'bad', label: '🔻 En pérdida' };
+    return m >= 0.15 ? { level: 'ok', label: '🚀 Ganador' } : { level: 'warn', label: '🟡 Zona límite' };
+  }
+
+  core.diagnostics = { funnel, cascade, story, verdict };
 })();

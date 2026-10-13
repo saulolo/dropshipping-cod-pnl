@@ -14,13 +14,19 @@
     const mx = app.dataLoader.metricsContext();
     const a = aggregate(S.dropi.lines, S.meta || [], f, mx);
     const x = app.filters.extras(f, a);
-    S.current = { a, x, f };
+    const lines = S.dropi.lines, meta = S.meta || [];
+    const prev = core.insights.previous(lines, meta, f, mx);
+    const weeks = core.insights.weeks(lines, meta, f, mx);
+    S.current = { a, x, f, weeks };
 
     ui.notices.render(a, S);
     app.filters.showAutoValues(a);
     ui.summary.renderHeader(a, x);
-    ui.summary.renderKpis(a);
+    ui.summary.renderKpis(a, prev, weeks);
+    ui.summary.renderProjection(core.insights.projection(a));
     ui.summary.renderStory(core.diagnostics.story(a, x.producto));
+    ui.trend.weekly(weeks);
+    ui.simulator.draw(a);
     ui.cascade.draw(a);
     ui.diagnosisPanel.render('#cdiag-table', '#cdiag-concl', core.diagnostics.cascade(a));
     ui.funnel.draw(a, S.funnelMode === 'pct');
@@ -63,7 +69,7 @@
     app.dataLoader.init();
     app.save.init();
     ui.diagnosisPanel.bindToggles();
-    ui.summary.bindKpiTips();
+    ui.summary.init();
 
     $('#funnel-mode').addEventListener('click', (e) => {
       const b = e.target.closest('[data-mode]');
@@ -73,9 +79,12 @@
       ui.funnel.draw(S.current.a, S.funnelMode === 'pct');
     });
 
-    // La cascada depende del ancho de su tarjeta.
+    // La cascada y la tendencia dependen del ancho de su tarjeta.
     let rz;
-    window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => S.current && ui.cascade.draw(S.current.a), 120); });
+    window.addEventListener('resize', () => {
+      clearTimeout(rz);
+      rz = setTimeout(() => { if (S.current) { ui.cascade.draw(S.current.a); ui.trend.weekly(S.current.weeks); } }, 120);
+    });
 
     ui.notices.render(null, S);
   }

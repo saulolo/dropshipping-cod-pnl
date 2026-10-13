@@ -19,7 +19,7 @@ Tablero P&L contra entrega (COD) de NovaSociety: cruza el reporte de órdenes de
 - **Nada de `import`/`export` ni ES modules**: se bloquean en `file://`. Cada archivo es un IIFE que publica en el namespace global `PYL` (`PYL.core.*`, `PYL.services.*`, `PYL.ui.*`, `PYL.app.*`).
 - **Orden de `<script>` en `index.html` = orden de capas**: `core → services → ui → app`, y `app/main.js` siempre al final (ahí arranca la app). Un archivo nuevo va dentro de su capa, antes de quien lo usa.
 - Cada capa solo usa las anteriores. `core` no toca DOM. `ui` recibe datos y callbacks por parámetro y nunca modifica estado. Solo `app` muta `app.state` (`js/app/state.js`).
-- **Los diagnósticos/textos dinámicos devuelven datos, no HTML**: arreglos de segmentos donde un string es texto plano y `{ b: '...' }` va en negrita; `PYL.ui.dom.rich(node, segments)` los pinta. Las reglas de negocio con benchmarks viven en `core/diagnostics.js` (`funnel`, `cascade`, `story`).
+- **Los diagnósticos/textos dinámicos devuelven datos, no HTML**: arreglos de segmentos donde un string es texto plano y `{ b: '...' }` va en negrita; `PYL.ui.dom.rich(node, segments)` los pinta. Las reglas de negocio con benchmarks viven en `core/diagnostics.js` (`funnel`, `cascade`, `story`, `verdict`).
 - Estilos solo en `css/base.css` (tokens, base, tarjetas, filtros) y `css/components.css`; nada de `<style>` embebido en `index.html`.
 - Los archivos del repo usan finales de línea LF.
 
@@ -28,7 +28,8 @@ Tablero P&L contra entrega (COD) de NovaSociety: cruza el reporte de órdenes de
 `app/main.js#render()` es el único punto de pintado y se llama ante cualquier cambio (archivos, filtro de producto/fechas, IVA, presets):
 1. `app.filters.read()` arma el filtro `f` (`prod`, `from`, `to`, `iva`, `adsOverride`).
 2. `core.pnl.aggregate(lines, meta, f, mx)` devuelve el objeto `a` con todo el P&L del filtro.
-3. Cada componente `ui.*` recibe `a` (y `x` = extras como `producto`/`periodo`) y se repinta. `S.current = { a, x, f }` guarda el último cálculo para redibujos parciales (resize, modo del embudo).
+3. `core/insights.js` deriva lecturas extra con el mismo `aggregate`: `previous` (rango de igual duración justo antes, para los deltas de los KPI), `weeks` (semanas lunes–domingo recortadas al filtro: mini-líneas y gráfica semanal), `projection` (pedidos en ruta × efectividad × `cpaMax`) y `unitBase`/`simulate` (simulador; con los valores reales reproduce `util` exacto). Estas lecturas usan siempre la inversión automática (`adsOverride: null`).
+4. Cada componente `ui.*` recibe `a` (y `x` = extras como `producto`/`periodo`) y se repinta. `S.current = { a, x, f, weeks }` guarda el último cálculo para redibujos parciales (resize, modo del embudo).
 
 Tooltips: un único nodo flotante `#tip` (`ui/tooltip.js`). `infoLabel(name, tip)` / `attach(node, name, tip)` agregan el ícono "i" con explicación `{ h, p, li? }`. Los paneles desplegables usan `.diag-btn[aria-controls]` + `.diag-panel`; `ui.diagnosisPanel.bindToggles()` los conecta todos automáticamente.
 

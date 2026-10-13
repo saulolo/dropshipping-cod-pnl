@@ -20,6 +20,7 @@ js/
     meta.js           Facturación y métricas de campañas Meta, asignación a producto
     pnl.js            Ciclos de producto, reparto de inversión, agregado del P&L
     diagnostics.js    Benchmarks del embudo y la cascada, historia ejecutiva (datos)
+    insights.js       Periodo anterior, semanas, proyección de pedidos en ruta, simulador
     excel.js          Plantilla y escritura del consolidado de 20 columnas
     index.js          Solo Node: exporta todo el núcleo para pruebas
 
@@ -29,9 +30,9 @@ js/
     consolidado.js    Archivo consolidado con File System Access (Chrome/Edge)
 
   ui/                 Componentes que pintan el DOM. Reciben datos por parámetro.
-    dom.js, tooltip.js, feedback.js, upload-zones.js, notices.js, summary.js,
-    cascade.js, funnel.js, diagnosis-panel.js, unit-table.js,
-    products-table.js, campaigns-table.js, presets.js
+    dom.js, tooltip.js, feedback.js, upload-zones.js, notices.js, trend.js,
+    summary.js, cascade.js, funnel.js, diagnosis-panel.js, unit-table.js,
+    simulator.js, products-table.js, campaigns-table.js, presets.js
 
   app/                Estado y casos de uso; conecta core, services y ui
     state.js          Estado único de la aplicación

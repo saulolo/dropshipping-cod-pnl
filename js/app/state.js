@@ -11,6 +11,6 @@
     prod: '__all',    // producto seleccionado
     iva: true,        // inversión Meta con IVA
     funnelMode: 'n',  // embudo en unidades ('n') o porcentajes ('pct')
-    current: null,    // último cálculo mostrado: { a, x, f }
+    current: null,    // último cálculo mostrado: { a, x, f, weeks }
   };
 })();

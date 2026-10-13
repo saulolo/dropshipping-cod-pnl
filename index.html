@@ -17,6 +17,7 @@
   <header>
     <div class="eyebrow">P&amp;L contra entrega · Meta Ads + Dropi</div>
     <h1 id="title">Carga tus reportes para auditar el periodo</h1>
+    <div class="badge lg hidden" id="verdict"></div>
     <p class="take" id="take">Sube el reporte de órdenes de Dropi (.xlsx o .csv) y la facturación de Meta Ads (.csv). Todo se procesa en este navegador: los archivos no salen de tu computador.</p>
   </header>
 
@@ -54,7 +55,7 @@
 
   <main id="dash" class="hidden">
 
-    <section class="card" aria-label="Filtros">
+    <section class="card filters" aria-label="Filtros">
       <div class="bar">
         <div class="field">
           <label for="f-prod">Producto</label>
@@ -98,12 +99,14 @@
     </section>
 
     <section class="kpis" aria-label="Indicadores clave">
-      <div class="card"><div class="k-label"><span class="info" data-tip="util">Utilidad neta real<span class="i">i</span></span></div><span class="k-val" id="k-util">—</span><div class="k-foot" id="k-util-f"></div><div class="chip" id="c-util"></div></div>
-      <div class="card"><div class="k-label"><span class="info" data-tip="margen">Margen neto real<span class="i">i</span></span></div><span class="k-val" id="k-margen">—</span><div class="k-foot">Meta: 20%</div><div class="chip" id="c-margen"></div></div>
-      <div class="card"><div class="k-label"><span class="info" data-tip="efect">Efectividad de entrega<span class="i">i</span></span></div><span class="k-val" id="k-efect">—</span><div class="k-foot" id="k-efect-f"></div><div class="chip" id="c-efect"></div></div>
-      <div class="card"><div class="k-label"><span class="info" data-tip="roas">ROAS real (cobrado / ads)<span class="i">i</span></span></div><span class="k-val" id="k-roas">—</span><div class="k-foot">Equilibrio: <span id="k-roas-eq">—</span></div><div class="chip" id="c-roas"></div></div>
-      <div class="card"><div class="k-label"><span class="info" data-tip="cpa">CPA real por entrega<span class="i">i</span></span></div><span class="k-val" id="k-cpa">—</span><div class="k-foot">Máximo sostenible: <span id="k-cpa-max">—</span></div><div class="chip" id="c-cpa"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="util">Utilidad neta real<span class="i">i</span></span></div><span class="k-val" id="k-util">—</span><div class="delta" id="d-util"></div><div class="k-foot" id="k-util-f"></div><div class="spark" id="s-util"></div><div class="chip" id="c-util"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="margen">Margen neto real<span class="i">i</span></span></div><span class="k-val" id="k-margen">—</span><div class="delta" id="d-margen"></div><div class="k-foot">Meta: 20%</div><div class="spark" id="s-margen"></div><div class="chip" id="c-margen"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="efect">Efectividad de entrega<span class="i">i</span></span></div><span class="k-val" id="k-efect">—</span><div class="delta" id="d-efect"></div><div class="k-foot" id="k-efect-f"></div><div class="spark" id="s-efect"></div><div class="chip" id="c-efect"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="roas">ROAS real (cobrado / ads)<span class="i">i</span></span></div><span class="k-val" id="k-roas">—</span><div class="delta" id="d-roas"></div><div class="k-foot">Equilibrio: <span id="k-roas-eq">—</span></div><div class="spark" id="s-roas"></div><div class="chip" id="c-roas"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="cpa">CPA real por entrega<span class="i">i</span></span></div><span class="k-val" id="k-cpa">—</span><div class="delta" id="d-cpa"></div><div class="k-foot">Máximo sostenible: <span id="k-cpa-max">—</span></div><div class="spark" id="s-cpa"></div><div class="chip" id="c-cpa"></div></div>
     </section>
+
+    <p class="proj hidden" id="proj"></p>
 
     <section class="exec" aria-label="Resumen ejecutivo">
       <button type="button" class="diag-btn" aria-expanded="false" aria-controls="story-panel">📑 Ver Resumen Ejecutivo de la Operación <span class="car" aria-hidden="true">▾</span></button>
@@ -112,8 +115,29 @@
           <div class="diag-body">
             <div class="eyebrow">Historia ejecutiva del periodo</div>
             <p class="story" id="story"></p>
+            <div class="actions story-actions">
+              <button class="btn ghost" id="story-copy" type="button">📋 Copiar resumen</button>
+              <button class="btn ghost" id="story-print" type="button">🖨️ Imprimir / PDF</button>
+            </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="grid2">
+      <div class="card">
+        <h2>Tendencia semanal</h2>
+        <p class="note">Utilidad por semana de pedido (lunes a domingo). Barras tenues = semana parcial. Las semanas recientes aún tienen pedidos en ruta.</p>
+        <div class="chart chart-sm" id="trend"></div>
+      </div>
+      <div class="card" id="sim-card">
+        <div class="card-head">
+          <h2>Simulador ¿qué pasa si?</h2>
+          <button class="btn ghost btn-sm" id="sim-reset" type="button">Volver a lo real</button>
+        </div>
+        <p class="note">Mismos pedidos cerrados del filtro. Mueve una palanca y mira cómo cambia la utilidad.</p>
+        <div class="sim-levers" id="sim-levers"></div>
+        <div class="sim-out" id="sim-out"></div>
       </div>
     </section>
 
@@ -230,6 +254,7 @@
 <script src="js/core/meta.js"></script>
 <script src="js/core/pnl.js"></script>
 <script src="js/core/diagnostics.js"></script>
+<script src="js/core/insights.js"></script>
 <script src="js/core/excel.js"></script>
 <!-- Services: archivos y almacenamiento del navegador -->
 <script src="js/services/storage.js"></script>
@@ -241,11 +266,13 @@
 <script src="js/ui/feedback.js"></script>
 <script src="js/ui/upload-zones.js"></script>
 <script src="js/ui/notices.js"></script>
+<script src="js/ui/trend.js"></script>
 <script src="js/ui/summary.js"></script>
 <script src="js/ui/cascade.js"></script>
 <script src="js/ui/funnel.js"></script>
 <script src="js/ui/diagnosis-panel.js"></script>
 <script src="js/ui/unit-table.js"></script>
+<script src="js/ui/simulator.js"></script>
 <script src="js/ui/products-table.js"></script>
 <script src="js/ui/campaigns-table.js"></script>
 <script src="js/ui/presets.js"></script>
