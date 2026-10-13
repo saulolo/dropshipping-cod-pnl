@@ -74,6 +74,11 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(24px, 3.4vw, 
 .seg button { appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 500; padding: 5px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
 .seg button:hover { color: var(--fg); }
 .seg button.on { background: var(--accent); color: #fff; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.presets:empty { display: none; }
+.presets button { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 12px; padding: 5px 11px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.presets button:hover { color: var(--fg); border-color: #3a4560; }
+.presets button.on { color: var(--fg); border-color: var(--accent); background: rgba(122,115,255,.14); }
 .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
 .btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font: inherit; font-weight: 500; padding: 9px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
 .btn:hover { border-color: #3a4560; }
@@ -217,7 +222,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
           <label id="f-iva-l">Inversión Meta</label>
           <div class="seg" id="f-iva" role="group" aria-labelledby="f-iva-l">
             <button type="button" data-iva="1" class="on" aria-pressed="true" title="Gasto real cobrado a la tarjeta (facturación)">Con IVA 19%</button>
-            <button type="button" data-iva="0" aria-pressed="false" title="Gasto bruto reportado por el Administrador de anuncios">Sin IVA</button>
+            <button type="button" data-iva="0" aria-pressed="false" title="Gasto bruto Meta Ads: cargos de facturación ÷ 1,19">Sin IVA</button>
           </div>
         </div>
         <div class="field">
@@ -237,6 +242,7 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
           <input type="text" inputmode="decimal" id="f-ctr" placeholder="—" style="width:100px">
         </div>
       </div>
+      <div class="presets" id="presets" role="group" aria-label="Periodos rápidos"></div>
     </section>
 
     <section class="kpis" aria-label="Indicadores clave">
@@ -313,13 +319,9 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
 <div class="toast" id="toast"></div>
 <div class="modal-bg" id="modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-h">
-    <h3 id="modal-h">Registro duplicado</h3>
+    <h3 id="modal-h"></h3>
     <p id="modal-p"></p>
-    <div class="actions">
-      <button class="btn ghost" data-r="cancel" type="button">Cancelar</button>
-      <button class="btn" data-r="append" type="button">Agregar como nueva fila</button>
-      <button class="btn primary" data-r="overwrite" type="button">Sobrescribir</button>
-    </div>
+    <div class="actions" id="modal-actions"></div>
   </div>
 </div>
 
@@ -572,9 +574,45 @@ const ENGINE = (() => {
 
   const IVA = 0.19;
   const div = (a, b) => (b ? a / b : null);
-  const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+  const addDays = (d, n) => new Date(Date.parse(d) + n * 864e5).toISOString().slice(0, 10);
 
-  // f: { prod: '__all' | nombre, from, to, adsOverride: number|null, iva: boolean (por defecto true) }
+  // Ciclo de cada producto: de su primer a su último pedido en Dropi. El producto más
+  // reciente sigue activo hasta hoy. giftFrom marca el primer pedido con obsequio.
+  function cycles(lines, today) {
+    const m = new Map();
+    lines.forEach((l) => {
+      if (!l.date) return;
+      const c = m.get(l.prod) || { prod: l.prod, from: l.date, to: l.date, giftFrom: null, gift: null };
+      if (l.date < c.from) c.from = l.date;
+      if (l.date > c.to) c.to = l.date;
+      if (l.giftOf && (!c.giftFrom || l.date < c.giftFrom)) { c.giftFrom = l.date; c.gift = l.giftOf; }
+      m.set(l.prod, c);
+    });
+    const list = [...m.values()].sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+    const lastEnd = list.reduce((s, c) => (c.to > s ? c.to : s), '');
+    list.forEach((c) => {
+      c.lastOrder = c.to;
+      if (c.to === lastEnd && today && today > c.to) { c.to = today; c.toToday = true; }
+    });
+    return list;
+  }
+
+  // Fracción de un cargo de Meta (fecha d) que corresponde a prod.
+  function chargeShare(d, prod, cyc, w) {
+    let cand = cyc.filter((c) => d >= c.from && d <= c.to);
+    if (!cand.length) {
+      // Cargo fuera de todo ciclo: va al último producto que terminó antes (Meta cobra con retraso),
+      // o al primero si el cargo es anterior a cualquier pedido.
+      const before = cyc.filter((c) => c.to < d).sort((a, b) => (a.to < b.to ? 1 : -1));
+      cand = before.length ? [before[0]] : cyc.slice(0, 1);
+    }
+    if (!cand.some((c) => c.prod === prod)) return 0;
+    if (cand.length === 1) return 1;
+    const tot = cand.reduce((s, c) => s + (w[c.prod] || 0), 0);
+    return tot ? (w[prod] || 0) / tot : 1 / cand.length;
+  }
+
+  // f: { prod: '__all' | nombre, from, to, adsOverride: number|null, iva: boolean (por defecto true), today: 'aaaa-mm-dd' }
   // mx: { camps, map: {campaña: producto|null} } o null si no hay reporte de métricas.
   function aggregate(lines, meta, f, mx) {
     const inRange = (d) => !!d && (!f.from || d >= f.from) && (!f.to || d <= f.to);
@@ -589,36 +627,35 @@ const ENGINE = (() => {
     const fEnt = sum('ent', 'flete'), fDevIda = sum('dev', 'flete'), fRet = sum('dev', 'dev');
     const fletes = fEnt + fDevIda + fRet;
 
-    // Métricas: una fila que cubre un rango más largo que el filtro se prorratea por días.
+    // Métricas: sin prorrateo. Entran las filas de campaña cuyo periodo toca el filtro;
+    // si el export no trae desglose diario, son los totales del reporte completo.
+    // Tampoco entran campañas de un producto sin pedidos activos en el rango.
     const all = f.prod === '__all';
-    const overlap = (cp) => {
-      if (!cp.start || !cp.end) return 1;
-      const a = f.from && f.from > cp.start ? f.from : cp.start;
-      const b = f.to && f.to < cp.end ? f.to : cp.end;
-      return a > b ? 0 : (days(a, b) + 1) / (days(cp.start, cp.end) + 1);
-    };
-    const camps = mx ? mx.camps.map((cp) => ({ ...cp, k: overlap(cp), prod: mx.map[cp.name] ?? null })).filter((cp) => cp.k > 0) : [];
+    const cyc = cycles(lines, f.today);
+    const live = (p) => { const c = cyc.find((x) => x.prod === p); return !c || ((!f.to || c.from <= f.to) && (!f.from || c.to >= f.from)); };
+    const touches = (cp) => (!cp.start || !f.to || cp.start <= f.to) && (!cp.end || !f.from || cp.end >= f.from);
+    const camps = mx ? mx.camps.map((cp) => ({ ...cp, prod: mx.map[cp.name] ?? null })).filter((cp) => touches(cp) && (!cp.prod || live(cp.prod))) : [];
     const selCamps = all ? camps : camps.filter((cp) => cp.prod === f.prod);
-    const csum = (list, fn) => list.reduce((s, cp) => s + fn(cp) * cp.k, 0);
+    const csum = (list, fn) => list.reduce((s, cp) => s + fn(cp), 0);
     const mSpendAll = csum(camps, (cp) => cp.spend);
     const mSpendSel = csum(selCamps, (cp) => cp.spend);
     const mUnassigned = csum(camps.filter((cp) => !cp.prod), (cp) => cp.spend);
+    const metricsWider = camps.some((cp) => (cp.start && f.from && cp.start < f.from) || (cp.end && f.to && cp.end > f.to));
 
-    // Inversión con IVA = facturación (gasto real de tarjeta); sin IVA = gasto de campañas.
-    // Si falta uno de los dos archivos, se deriva del otro con el IVA de 19%.
-    // Se reparte por producto según el gasto de sus campañas; sin métricas, según la
-    // facturación de pedidos recibidos.
+    // Inversión: suma exacta de los cargos de facturación con fecha dentro del rango.
+    // Por producto, cada cargo va al producto con pedidos activos en esa fecha (ciclo de
+    // Dropi); si dos productos coinciden, se divide según el gasto de sus campañas.
+    // Con IVA = cargo de tarjeta; sin IVA = cargo ÷ 1,19. Sin facturación se usan las métricas.
     const metaR = meta.filter((m) => inRange(m.date));
     const billTotal = metaR.reduce((s, m) => s + m.amt, 0);
     const withIva = f.iva !== false;
-    const adsTotal = withIva
-      ? (meta.length ? billTotal : mSpendAll * (1 + IVA))
-      : (camps.length ? mSpendAll : billTotal / (1 + IVA));
-    const totAll = rangeLines.reduce((s, l) => s + l.total, 0);
-    const totSel = sel.reduce((s, l) => s + l.total, 0);
-    const shareSource = all ? null : mSpendAll ? 'metricas' : 'facturacion';
-    const share = all ? 1 : mSpendAll ? mSpendSel / mSpendAll : div(totSel, totAll) || 0;
-    const adsAuto = adsTotal * share;
+    let adsIva;
+    if (meta.length) {
+      const w = {};
+      if (mx) mx.camps.forEach((cp) => { const p = mx.map[cp.name]; if (p) w[p] = (w[p] || 0) + cp.spend; });
+      adsIva = all ? billTotal : metaR.reduce((s, m) => s + m.amt * chargeShare(m.date, f.prod, cyc, w), 0);
+    } else adsIva = mSpendSel * (1 + IVA);
+    const adsAuto = withIva ? adsIva : adsIva / (1 + IVA);
     const ads = f.adsOverride != null ? f.adsOverride : adsAuto;
 
     const buys = camps.length ? Math.round(csum(selCamps, (cp) => cp.purchases)) : null;
@@ -627,17 +664,25 @@ const ENGINE = (() => {
     const active = [...new Set(selCamps.filter((cp) => cp.spend > 0).map((cp) => cp.name))];
     const campAuto = !all && active.length ? active.join(' + ') : null;
 
+    // Control del IVA: facturación del periodo del reporte de métricas frente a su gasto.
+    let ivaCheck = null;
+    if (mx && meta.length) {
+      const mFrom = mx.camps.map((cp) => cp.start).filter(Boolean).sort()[0];
+      const mTo = mx.camps.map((cp) => cp.end).filter(Boolean).sort().pop();
+      const mTot = mx.camps.reduce((s, cp) => s + cp.spend, 0);
+      const bill = meta.filter((m) => (!mFrom || m.date >= mFrom) && (!mTo || m.date <= mTo)).reduce((s, m) => s + m.amt, 0);
+      if (mTot) ivaCheck = { bill, spend: mTot, pct: bill / mTot - 1 };
+    }
+
     const wallet = fact - merc - fletes;
     const util = wallet - ads;
     return {
       ...c, desp: c.rec - c.can, ruta: c.rut + c.pen,
       fact, merc, fEnt, fDevIda, fRet, fletes, wallet, util,
-      ads, adsAuto, adsTotal, billTotal, withIva, share, shareSource, metaN: metaR.length,
-      buys, ctr, campAuto, mSpendAll, mSpendSel, mUnassigned,
+      ads, adsAuto, billTotal, withIva, metaN: metaR.length,
+      buys, ctr, campAuto, mSpendAll, mSpendSel, mUnassigned, metricsWider, ivaCheck,
       checkouts: camps.length ? Math.round(csum(selCamps, (cp) => cp.checkouts)) : null,
       cpaMeta: buys ? mSpendSel / buys : null,
-      partial: camps.some((cp) => cp.k < 1),
-      iva: meta.length && mSpendAll ? billTotal / mSpendAll - 1 : null,
       margen: div(util, fact), efect: div(c.ent, c.ent + c.dev), roas: div(fact, ads), roasEq: div(fact, wallet),
       cpa: div(ads, c.ent), cpaMax: div(wallet, c.ent), pesoCostos: div(fletes + ads, fact),
     };
@@ -666,24 +711,32 @@ const ENGINE = (() => {
     '% Efectividad Entrega ƒ', 'Facturación Cobrada COP', 'Costo Mercancía COP', 'Costo Fletes Total COP',
     'Ganancia Wallet Dropi COP ƒ', 'Utilidad Neta Real COP ƒ', 'Margen Neto Real % ƒ'];
 
+  // Fórmulas por índice de columna (0 = A), iguales a las del consolidado original.
+  const FORMULAS = {
+    5: (r) => `IF(E${r}>0,D${r}/E${r},"")`,
+    9: (r) => `IF(H${r}="","",H${r}-I${r})`,
+    13: (r) => `IF((K${r}+L${r})>0,K${r}/(K${r}+L${r}),"")`,
+    17: (r) => `IF(O${r}="","",O${r}-P${r}-Q${r})`,
+    18: (r) => `IF(R${r}="","",R${r}-D${r})`,
+    19: (r) => `IF(N(O${r})>0,S${r}/O${r},"")`,
+  };
+
   // x: { periodo, producto, campana, compras, ctr }  (ctr como fracción: 0.058 = 5,8%)
   function rowCells(a, x, r) {
     const R = Math.round;
     const ads = R(a.ads), fact = R(a.fact), merc = R(a.merc), fl = R(a.fletes);
     const wallet = fact - merc - fl, util = wallet - ads;
-    const F = (formula, result) => ({ formula, result: result == null ? '' : result });
+    const F = (i, result) => ({ formula: FORMULAS[i](r), result: result == null ? '' : result });
     return [
       x.periodo, x.producto, x.campana || 'General', ads,
       x.compras == null ? null : x.compras,
-      F(`IF(E${r}>0,D${r}/E${r},"")`, x.compras > 0 ? ads / x.compras : null),
+      F(5, x.compras > 0 ? ads / x.compras : null),
       x.ctr == null ? null : x.ctr,
-      a.rec, a.can, F(`IF(H${r}="","",H${r}-I${r})`, a.rec - a.can),
+      a.rec, a.can, F(9, a.rec - a.can),
       a.ent, a.dev, a.ruta,
-      F(`IF((K${r}+L${r})>0,K${r}/(K${r}+L${r}),"")`, a.ent + a.dev > 0 ? a.ent / (a.ent + a.dev) : null),
+      F(13, a.ent + a.dev > 0 ? a.ent / (a.ent + a.dev) : null),
       fact, merc, fl,
-      F(`IF(O${r}="","",O${r}-P${r}-Q${r})`, wallet),
-      F(`IF(R${r}="","",R${r}-D${r})`, util),
-      F(`IF(N(O${r})>0,S${r}/O${r},"")`, fact > 0 ? util / fact : null),
+      F(17, wallet), F(18, util), F(19, fact > 0 ? util / fact : null),
     ];
   }
 
@@ -720,38 +773,112 @@ const ENGINE = (() => {
     return { row: target, overwritten: target === dup };
   }
 
-  // Libro nuevo con la misma estructura del consolidado.
-  function buildExport(ExcelJS, a, x) {
+  // Libro vacío con la estructura del consolidado: título, grupos y encabezados en la fila 3.
+  // Réplica del consolidado original: filas 4-203 con fórmulas precargadas, formato
+  // condicional, validación de números ≥ 0 y hoja "Fórmulas" de referencia.
+  const LAST_ROW = 203;
+  function buildTemplate(ExcelJS) {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'P&L COD';
     const ws = wb.addWorksheet('Registro', { views: [{ state: 'frozen', xSplit: 3, ySplit: 3 }] });
-    const band = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
-    const thin = { style: 'thin', color: { argb: 'FFD1D5DB' } };
+    const solid = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
     ws.getCell('A1').value = 'Utilidad Consolidado Global';
-    ws.getCell('A1').font = { bold: true, size: 14 };
-    [['A2:C2', 'GENERAL', 'FF374151'], ['D2:G2', 'PUBLICIDAD · Meta Ads', 'FF4338CA'], ['H2:N2', 'LOGÍSTICA COD · Dropi', 'FF0F766E'], ['O2:T2', 'FINANZAS REALES · P&L de bolsillo', 'FF166534']]
-      .forEach(([rng, label, color]) => {
-        ws.mergeCells(rng);
-        const c = ws.getCell(rng.split(':')[0]);
-        c.value = label; c.fill = band(color);
-        c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.alignment = { horizontal: 'center' };
+    ws.getCell('A1').font = { bold: true, size: 15, color: { argb: 'FF0F172A' } };
+    // [rango del grupo, título, color fuerte, color suave del encabezado]
+    const GROUPS = [
+      ['A', 'C', 'GENERAL', 'FF334155', 'FFF1F5F9'],
+      ['D', 'G', 'PUBLICIDAD · Meta Ads', 'FF4F46E5', 'FFEEF2FF'],
+      ['H', 'N', 'LOGÍSTICA COD · Dropi', 'FF0E7490', 'FFECFEFF'],
+      ['O', 'T', 'FINANZAS REALES · P&L de bolsillo', 'FF047857', 'FFECFDF5'],
+    ];
+    const col = (L) => L.charCodeAt(0) - 64;
+    GROUPS.forEach(([a, b, label, strong, soft]) => {
+      ws.mergeCells(`${a}2:${b}2`);
+      const g = ws.getCell(`${a}2`);
+      g.value = label; g.fill = solid(strong);
+      g.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } }; g.alignment = { horizontal: 'center', vertical: 'middle' };
+      for (let i = col(a); i <= col(b); i++) {
+        const c = ws.getRow(3).getCell(i);
+        c.value = HEADERS[i - 1]; c.fill = solid(soft);
+        c.font = { bold: true, size: 9, color: { argb: strong } };
+        c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      }
+    });
+    ws.getRow(3).height = 42;
+    [16, 18, 13, 15, 10, 13, 10, 13, 13, 11, 10, 13, 9, 11, 15, 14, 13, 15, 13, 11].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+    for (let r = 4; r <= LAST_ROW; r++) {
+      const row = ws.getRow(r);
+      HEADERS.forEach((h, i) => {
+        const c = row.getCell(i + 1);
+        if (i > 2) c.numFmt = FMT[i];
+        if (FORMULAS[i]) c.value = { formula: FORMULAS[i](r), result: '' };
       });
-    HEADERS.forEach((h, i) => {
-      const c = ws.getRow(3).getCell(i + 1);
-      c.value = h; c.fill = band('FF111827'); c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      ws.getColumn(i + 1).width = i < 3 ? 22 : 16;
+    }
+
+    const rng = (a, b) => `${a}4:${b}${LAST_ROW}`;
+    const GOOD = ['FF065F46', 'FFD1FAE5'], MID = ['FF92400E', 'FFFEF3C7'], BAD = ['FF991B1B', 'FFFEE2E2'];
+    const style = ([font, fill], bold = true) => ({
+      font: font ? { bold, color: { argb: font } } : undefined,
+      fill: fill ? { type: 'pattern', pattern: 'solid', bgColor: { argb: fill } } : undefined,
     });
-    ws.getRow(3).height = 34;
-    rowCells(a, x, 4).forEach((v, i) => {
-      const c = ws.getRow(4).getCell(i + 1);
-      c.value = v; c.numFmt = FMT[i]; c.border = { top: thin, bottom: thin, left: thin, right: thin };
+    let prio = 1;
+    const rule = (formula, st, stop) => ({ type: 'expression', formulae: [formula], style: st, priority: prio++, stopIfTrue: !!stop });
+    const traffic = (L, good, mid) => ws.addConditionalFormatting({ ref: rng(L, L), rules: [
+      rule(`AND(ISNUMBER(${L}4),${L}4>=${good})`, style(GOOD), true),
+      rule(`AND(ISNUMBER(${L}4),${L}4>=${mid})`, style(MID), true),
+      rule(`ISNUMBER(${L}4)`, style(BAD)),
+    ] });
+    const sign = (L) => ws.addConditionalFormatting({ ref: rng(L, L), rules: [
+      rule(`AND(ISNUMBER(${L}4),${L}4<0)`, style(BAD)),
+      rule(`AND(ISNUMBER(${L}4),${L}4>0)`, style(['FF047857', null])),
+    ] });
+    traffic('N', 0.7, 0.6);   // efectividad de entrega
+    traffic('T', 0.2, 0);     // margen neto
+    traffic('G', 0.02, 0.01); // CTR único
+    sign('R'); sign('S');     // wallet y utilidad
+    // Entregados + Devueltos + En ruta debe cuadrar con Despachados.
+    ws.addConditionalFormatting({ ref: rng('J', 'M'), rules: [rule('AND($H4<>"",($K4+$L4+$M4)<>$J4)', { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFFFE4E6' } } })] });
+    // Cancelación sobre 20% de lo recibido.
+    ws.addConditionalFormatting({ ref: rng('I', 'I'), rules: [rule('AND(N($H4)>0,$I4/$H4>0.2)', style(MID))] });
+
+    const dv = { type: 'decimal', operator: 'greaterThanOrEqual', allowBlank: true, formulae: [0], showErrorMessage: true, errorTitle: 'Valor inválido', error: 'Solo números ≥ 0' };
+    ['D', 'E', 'G', 'H', 'I', 'K', 'L', 'M', 'O', 'P', 'Q'].forEach((L) => {
+      if (ws.dataValidations && ws.dataValidations.add) ws.dataValidations.add(rng(L, L), dv);
+      else for (let r = 4; r <= LAST_ROW; r++) ws.getCell(`${L}${r}`).dataValidation = dv;
     });
+
+    const fx = wb.addWorksheet('Fórmulas');
+    [
+      ['Columna', 'Métrica', 'Fórmula Excel/Sheets (inglés)', 'Fórmula Excel/Sheets (español, sep. ;)'],
+      ['F', 'CPA Meta COP', '=IFERROR(D4/E4,"")', '=SI.ERROR(D4/E4;"")'],
+      ['J', 'Pedidos Despachados', '=H4-I4', '=H4-I4'],
+      ['N', '% Efectividad Entrega', '=IFERROR(K4/(K4+L4),"")', '=SI.ERROR(K4/(K4+L4);"")'],
+      ['R', 'Ganancia Wallet Dropi', '=O4-P4-Q4', '=O4-P4-Q4'],
+      ['S', 'Utilidad Neta Real', '=R4-D4', '=R4-D4'],
+      ['T', 'Margen Neto Real %', '=IFERROR(S4/O4,"")', '=SI.ERROR(S4/O4;"")'],
+      ['—', 'ROAS real (extra)', '=IFERROR(O4/D4,"")', '=SI.ERROR(O4/D4;"")'],
+      ['—', 'CPA real por entrega (extra)', '=IFERROR(D4/K4,"")', '=SI.ERROR(D4/K4;"")'],
+      ['—', 'ROAS de equilibrio (extra)', '=IFERROR(O4/R4,"")', '=SI.ERROR(O4/R4;"")'],
+      [],
+      ['Nota', `Celdas con ƒ son fórmulas: no escribir encima. Filas 4-${LAST_ROW} ya traen fórmulas.`],
+      ['Nota', 'Celdas rosadas en J:M = no cuadra Entregados + Devueltos + En ruta con Despachados.'],
+    ].forEach((vals) => fx.addRow(vals));
+    fx.getRow(1).font = { bold: true, color: { argb: 'FF0F172A' } };
+    [9, 28, 34, 38].forEach((w, i) => { fx.getColumn(i + 1).width = w; });
+
     wb.calcProperties = { fullCalcOnLoad: true };
     return wb;
   }
 
-  return { norm, toISO, num, parseCSV, cellVal, isDropi, isMetrics, classify, buildDropi, buildMeta, buildMetrics, matchProduct, aggregate, products, periodLabel, rowCells, writeRegistro, buildExport, HEADERS };
+  // Libro nuevo con la fila del filtro actual.
+  function buildExport(ExcelJS, a, x) {
+    const wb = buildTemplate(ExcelJS);
+    writeRegistro(wb, a, x, 'append');
+    return wb;
+  }
+
+  return { norm, toISO, num, parseCSV, cellVal, isDropi, isMetrics, classify, buildDropi, buildMeta, buildMetrics, matchProduct, aggregate, cycles, addDays, products, periodLabel, rowCells, writeRegistro, buildTemplate, buildExport, HEADERS };
 })();
 if (typeof module !== 'undefined') module.exports = ENGINE;
 // ===== ENGINE END =====
@@ -784,10 +911,19 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     t.textContent = msg; t.className = 'toast show ' + (kind || '');
     clearTimeout(toastT); toastT = setTimeout(() => (t.className = 'toast'), 5000);
   }
-  function askDuplicate(text) {
+  // Diálogo con botones [{r, label, cls}]; resuelve con el r elegido o 'cancel'.
+  // El clic en el botón cuenta como gesto del usuario, necesario para abrir los selectores de archivo.
+  function ask(title, text, buttons) {
     return new Promise((res) => {
       const m = $('#modal');
+      $('#modal-h').textContent = title;
       $('#modal-p').textContent = text;
+      const box = $('#modal-actions'); box.textContent = '';
+      [{ r: 'cancel', label: 'Cancelar', cls: 'ghost' }, ...buttons].forEach((b) => {
+        const btn = el('button', 'btn ' + (b.cls || ''), b.label);
+        btn.type = 'button'; btn.dataset.r = b.r;
+        box.appendChild(btn);
+      });
       m.classList.add('show');
       const on = (e) => {
         const r = e.target.closest('[data-r]');
@@ -901,12 +1037,59 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     ENGINE.products(S.dropi.lines).forEach((p) => sel.appendChild(new Option(p, p)));
     sel.value = [...sel.options].some((o) => o.value === S.prod) ? S.prod : '__all';
     S.prod = sel.value;
+    const c = S.prod !== '__all' && ENGINE.cycles(S.dropi.lines, todayISO()).find((x) => x.prod === S.prod);
+    if (c) { $('#f-from').value = c.from; $('#f-to').value = c.to; }
   }
   const parseInput = (id, commaDecimal) => { const v = $(id).value.trim(); return v === '' ? null : ENGINE.num(v, commaDecimal); };
   function filters() {
     let from = $('#f-from').value || null, to = $('#f-to').value || null;
     if (from && to && from > to) [from, to] = [to, from];
-    return { prod: S.prod, from, to, adsOverride: parseInput('#f-ads', false), iva: S.iva };
+    return { prod: S.prod, from, to, adsOverride: parseInput('#f-ads', false), iva: S.iva, today: todayISO() };
+  }
+  const todayISO = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+
+  // Al elegir un producto, las fechas se ajustan a su ciclo real en Dropi.
+  function selectProduct(key, from, to) {
+    S.prod = key;
+    $('#f-prod').value = key;
+    if (from === undefined) {
+      if (key === '__all') { const b = dateBounds(); from = b.min; to = b.max; } else {
+        const c = ENGINE.cycles(S.dropi.lines, todayISO()).find((x) => x.prod === key);
+        if (c) { from = c.from; to = c.to; }
+      }
+    }
+    if (from) $('#f-from').value = from;
+    if (to) $('#f-to').value = to;
+    render();
+  }
+
+  // Periodos rápidos: ciclo completo de cada producto y, si tuvo obsequio, la etapa antes y después.
+  function presetList() {
+    const short = (s) => { const w = s.replace(/\b(OBSEQUIO|REGALO|GRATIS|GIFT)\b/gi, '').trim().split(/\s+/)[0] || s; return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); };
+    const lab = (d) => ENGINE.periodLabel(d, d).slice(0, 6);
+    const out = [];
+    const cyc = ENGINE.cycles(S.dropi.lines, todayISO());
+    cyc.forEach((c) => {
+      const name = short(c.prod), end = c.toToday ? 'Hoy' : lab(c.to);
+      if (c.giftFrom && c.giftFrom > c.from) {
+        const e1 = ENGINE.addDays(c.giftFrom, -1);
+        out.push({ label: `Ciclo completo ${name} (${lab(c.from)} - ${end})`, prod: c.prod, from: c.from, to: c.to });
+        out.push({ label: `Etapa 1: ${name} sola (${lab(c.from)} - ${lab(e1)})`, prod: c.prod, from: c.from, to: e1 });
+        out.push({ label: `Etapa 2: ${name} + ${short(c.gift)} (${lab(c.giftFrom)} - ${end})`, prod: c.prod, from: c.giftFrom, to: c.to });
+      } else out.push({ label: `${name} (${lab(c.from)} - ${end})`, prod: c.prod, from: c.from, to: c.to });
+    });
+    const b = dateBounds();
+    out.push({ label: `Consolidado (${lab(b.min)} - ${lab(b.max)})`, prod: '__all', from: b.min, to: b.max });
+    return out;
+  }
+  function drawPresets(f) {
+    const box = $('#presets'); box.textContent = '';
+    presetList().forEach((p) => {
+      const b = el('button', p.prod === f.prod && p.from === f.from && p.to === f.to ? 'on' : '', p.label);
+      b.type = 'button';
+      b.addEventListener('click', () => selectProduct(p.prod, p.from, p.to));
+      box.appendChild(b);
+    });
   }
   $('#f-iva').addEventListener('click', (e) => {
     const b = e.target.closest('[data-iva]');
@@ -915,7 +1098,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     $('#f-iva').querySelectorAll('[data-iva]').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
     render();
   });
-  $('#f-prod').addEventListener('change', (e) => { S.prod = e.target.value; render(); });
+  $('#f-prod').addEventListener('change', (e) => selectProduct(e.target.value));
   ['#f-from', '#f-to', '#f-ads', '#f-buys', '#f-ctr', '#f-camp'].forEach((id) => $(id).addEventListener('input', render));
   $('#f-reset').addEventListener('click', () => { resetFilters(); $('#f-ads').value = ''; render(); });
 
@@ -985,6 +1168,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     drawUnit(a);
     drawProducts(f);
     drawCampaigns(f);
+    drawPresets(f);
   }
 
   function renderNotices(a) {
@@ -993,13 +1177,12 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     if (typeof ExcelJS === 'undefined') add('No cargó la librería de Excel (¿sin internet?). Abre la app con conexión para leer .xlsx y guardar.', 'error');
     if (!S.dropi || !a) return;
     if (!S.meta && !S.metrics) add('Sin archivos de Meta: la inversión es $0 salvo que escribas la "Inversión Ads manual". Utilidad, ROAS y CPA quedan incompletos.');
-    else if (!S.meta && a.withIva) add('Sin facturación de Meta: el gasto con IVA se estima como gasto de campañas × 1,19.');
-    else if (!S.metrics && !a.withIva) add('Sin reporte de métricas: el gasto sin IVA se estima como facturación ÷ 1,19.');
-    if (!S.metrics) add('Sin reporte de métricas: el gasto por producto se reparte según la facturación de sus pedidos. Compras Ads y CTR se escriben a mano.', 'info');
-    if (a.iva != null && a.mSpendAll) add(`Facturación ${F.cop(a.billTotal)} frente a gasto en campañas ${F.cop(a.mSpendAll)} (+${fmt(a.iva, 'pct')}: IVA 19% y ajustes). Vista ${a.withIva ? 'con IVA: la utilidad usa la facturación' : 'sin IVA: la utilidad usa el gasto de campañas'}.`, 'info');
+    else if (!S.meta) add('Sin facturación de Meta: la inversión sale de las métricas de campañas (× 1,19 con IVA) y no se puede filtrar por fecha de cargo.');
+    if (!S.metrics) add('Sin reporte de métricas: Compras Ads y CTR se escriben a mano.', 'info');
+    if (a.ivaCheck) add(`Control IVA: facturación ${F.cop(a.ivaCheck.bill)} frente a gasto en campañas ${F.cop(a.ivaCheck.spend)} en el periodo de las métricas (+${fmt(a.ivaCheck.pct, 'pct')}). Vista ${a.withIva ? 'con IVA: cargos de tarjeta' : 'sin IVA: cargos ÷ 1,19'}.`, 'info');
+    if (a.metricsWider && a.buys != null) add(`Compras y CTR son los totales de las campañas del reporte de métricas (${ENGINE.periodLabel(S.metrics.from, S.metrics.to)}): ese archivo no trae desglose diario. Para que sigan el filtro de fechas, expórtalo con desglose por Día.`, 'info');
     if (S.dropi.gifts) add(`${nf(S.dropi.gifts)} líneas de obsequio (${S.dropi.giftNames.join(', ')}) se suman al producto principal de su orden.`, 'info');
     if (a.mUnassigned > 0) add(`${F.cop(a.mUnassigned)} de gasto en campañas sin producto asignado: entra en el consolidado pero en ningún producto. Asígnalo en la tabla "Campañas Meta".`);
-    if (a.partial) add(`El reporte de métricas cubre ${ENGINE.periodLabel(S.metrics.from, S.metrics.to)} sin desglose diario. Para el rango filtrado, su gasto y compras se prorratean por días.`);
     if (S.dropi.noDate) add(`${S.dropi.noDate} líneas de Dropi sin FECHA válida quedan fuera del cálculo.`);
     if (S.metaInfo?.otherCur.length) add(`Meta trae divisas distintas a COP (${S.metaInfo.otherCur.join(', ')}). No se convierten.`, 'error');
     if (S.metaInfo?.skipped) add(`${S.metaInfo.skipped} cobros de Meta fallidos o reembolsados se omitieron.`, 'info');
@@ -1139,7 +1322,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
         el('td', 'muted', fmt(a.adsAuto, 'cop')), el('td', null, fmt(a.wallet, 'cop')),
         el('td', util >= 0 ? 'ok' : 'bad', fmt(util, 'cop')), el('td', cls(margen, 0.2, 0), fmt(margen, 'pct')),
       );
-      tr.addEventListener('click', () => { S.prod = key; $('#f-prod').value = key; render(); });
+      tr.addEventListener('click', () => selectProduct(key));
       tb.appendChild(tr);
     });
   }
@@ -1147,9 +1330,9 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
   function drawCampaigns(f) {
     const card = $('#camps-card');
     card.classList.toggle('hidden', !S.metrics);
-    $('#prod-note').textContent = S.metrics
-      ? 'Clic en una fila para filtrar. La inversión Meta se reparte por producto según el gasto de sus campañas.'
-      : 'Clic en una fila para filtrar. El gasto de Meta se reparte según la facturación de pedidos recibidos de cada producto.';
+    $('#prod-note').textContent = S.meta
+      ? 'Clic en una fila para filtrar. Cada cargo de Meta del rango se asigna al producto con pedidos activos en esa fecha.'
+      : 'Clic en una fila para filtrar. Sin facturación, la inversión de cada producto sale del gasto de sus campañas.';
     if (!S.metrics) return;
     const tb = $('#camp-table tbody'); tb.textContent = '';
     const prods = ENGINE.products(S.dropi.lines);
@@ -1194,21 +1377,41 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
   })();
 
   const FS = 'showOpenFilePicker' in window;
+  const XLSX_TYPES = [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }];
+  const MASTER_NAME = 'Utilidad_Consolidado_Global.xlsx';
   async function pickHandle() {
-    const [h] = await window.showOpenFilePicker({
-      id: 'consolidado',
-      types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
-    });
+    const [h] = await window.showOpenFilePicker({ id: 'consolidado', types: XLSX_TYPES });
     S.handle = h; await idb.set('master', h); updateWho();
     return h;
   }
+  // Crea un consolidado nuevo con la plantilla de 20 columnas en la ubicación que elija el usuario.
+  async function createHandle() {
+    const h = await window.showSaveFilePicker({ id: 'consolidado', suggestedName: MASTER_NAME, types: XLSX_TYPES });
+    const w = await h.createWritable();
+    await w.write(await ENGINE.buildTemplate(ExcelJS).xlsx.writeBuffer()); await w.close();
+    S.handle = h; await idb.set('master', h); updateWho();
+    return h;
+  }
+  // Elegir uno existente o crear uno nuevo; null si el usuario cancela.
+  async function chooseHandle(title, text) {
+    const r = await ask(title, text, [
+      { r: 'open', label: 'Elegir existente' },
+      { r: 'new', label: 'Crear nuevo', cls: 'primary' },
+    ]);
+    if (r === 'open') return pickHandle();
+    if (r === 'new') return createHandle();
+    return null;
+  }
   async function getHandle() {
     S.handle = S.handle || (await idb.get('master'));
-    if (!S.handle) await pickHandle();
-    let perm = await S.handle.queryPermission({ mode: 'readwrite' });
-    if (perm !== 'granted') perm = await S.handle.requestPermission({ mode: 'readwrite' });
+    if (!S.handle && !(await chooseHandle('Consolidado', `Elige tu ${MASTER_NAME} o crea uno nuevo con la estructura de 20 columnas.`))) return null;
+    return ensureWrite(S.handle);
+  }
+  async function ensureWrite(h) {
+    let perm = await h.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') perm = await h.requestPermission({ mode: 'readwrite' });
     if (perm !== 'granted') throw new Error('Sin permiso de escritura sobre el archivo.');
-    return S.handle;
+    return h;
   }
   async function updateWho() {
     const h = S.handle || (FS ? await idb.get('master') : null);
@@ -1236,12 +1439,33 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     try {
       const { a, x } = S.current;
       let file, h;
-      if (FS) { h = await getHandle(); file = await h.getFile(); } else { file = await pickFileFallback(); if (!file) return; }
+      if (FS) {
+        let missing = false;
+        try {
+          h = await getHandle();
+          if (!h) return;
+          file = await h.getFile();
+        } catch (e) {
+          if (e.name !== 'NotFoundError') throw e;
+          missing = true;
+        }
+        if (missing) {
+          // El archivo vinculado se movió o se eliminó: ofrecer crearlo de nuevo.
+          const name = S.handle?.name || MASTER_NAME;
+          h = await chooseHandle('No encontré el consolidado', `${name} ya no existe en su carpeta (¿lo moviste o eliminaste?). Crea uno nuevo o elige otro archivo.`);
+          if (!h) return;
+          await ensureWrite(h);
+          file = await h.getFile();
+        }
+      } else { file = await pickFileFallback(); if (!file) return; }
       const wb = new ExcelJS.Workbook();
       await wb.xlsx.load(await file.arrayBuffer());
       let res = ENGINE.writeRegistro(wb, a, x, 'ask');
       if (res.dup) {
-        const choice = await askDuplicate(`Ya existe "${x.periodo} · ${x.producto} · ${x.campana}" en la fila ${res.dup}. ¿Qué hago?`);
+        const choice = await ask('Registro duplicado', `Ya existe "${x.periodo} · ${x.producto} · ${x.campana}" en la fila ${res.dup}. ¿Qué hago?`, [
+          { r: 'append', label: 'Agregar como nueva fila' },
+          { r: 'overwrite', label: 'Sobrescribir', cls: 'primary' },
+        ]);
         if (choice === 'cancel') return;
         res = ENGINE.writeRegistro(wb, a, x, choice);
       }
@@ -1262,7 +1486,10 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
   });
 
   $('#btn-unlink').addEventListener('click', async () => {
-    try { await pickHandle(); toast('Archivo vinculado: ' + S.handle.name, 'ok'); } catch (e) { if (e.name !== 'AbortError') toast(e.message, 'error'); }
+    try {
+      const h = await chooseHandle('Cambiar consolidado', `Elige otro ${MASTER_NAME} o crea uno nuevo con la estructura de 20 columnas.`);
+      if (h) toast('Archivo vinculado: ' + h.name, 'ok');
+    } catch (e) { if (e.name !== 'AbortError') toast(e.message, 'error'); }
   });
 
   $('#btn-export').addEventListener('click', async () => {
