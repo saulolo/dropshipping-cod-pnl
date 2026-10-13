@@ -49,6 +49,7 @@
     LEVERS.forEach(([k, , kind, step, range]) => {
       const { inp, ref } = inputs[k];
       setRange(inp, base[k], range(base[k], { cpaMax: a.cpaMax || 0 }), step);
+      inputs[k].start = +inp.value;
       ref.textContent = 'Real: ' + fmt(base[k], kind);
     });
     update();
@@ -60,6 +61,7 @@
     LEVERS.forEach(([k]) => { const { inp, val, kind } = inputs[k]; p[k] = +inp.value; val.textContent = fmt(p[k], kind); });
     const r = simulate(base, p);
     const d = r.util - real.util;
+    $('#sim-reset').classList.toggle('dirty', LEVERS.some(([k]) => p[k] !== inputs[k].start));
     const out = $('#sim-out'); out.textContent = '';
     const big = el('div', 'sim-big');
     big.append(el('span', 'k-label', 'Utilidad simulada'), el('span', 'k-val ' + (r.util >= 0 ? 'ok' : 'bad'), fmt(r.util, 'cop')));
