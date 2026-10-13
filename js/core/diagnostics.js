@@ -108,5 +108,41 @@
     return { rows, conclusion };
   }
 
-  core.diagnostics = { funnel, cascade };
+  // Historia ejecutiva: une las 5 tarjetas KPI en un párrafo según el escenario del filtro.
+  function story(a, producto) {
+    if (!a.fact || !a.ent) return ['Aún no hay pedidos entregados y cobrados en este filtro para contar la historia del periodo.'];
+    if (!a.ads) return ['Sin gasto en Meta Ads cargado: sube la facturación de Meta o ingresa la inversión para conectar ROAS y CPA con la utilidad.'];
+    const pct = (v) => fmt(v, 'pct'), x = (v) => fmt(v, 'x'), cop = (v) => fmt(v, 'cop');
+    const sem = a.efect >= 0.7 ? ' 🟢' : ' 🔴';
+    const m = a.margen;
+
+    // El equilibrio va primero: un margen de ±2% se lee como tablas aunque la utilidad tenga signo.
+    if (Math.abs(m) <= 0.02) {
+      return ['⚖️ ', b('Operación en Punto de Equilibrio:'), ' tu negocio financió su aprendizaje a costo cero (', b(cop(a.util) + ' COP'),
+        '). El ROAS real (', b(x(a.roas)), ') igualó prácticamente el equilibrio de ', b(x(a.roasEq)),
+        '. La pauta cubrió los costos pero no dejó ganancia libre. Palanca clave: vender combos para subir el ticket promedio o reducir devoluciones.'];
+    }
+    if (a.util > 0) {
+      return ['🚀 ', b(`Excelente rendimiento con ${producto}:`), ' tu transportadora cumplió con una efectividad de ', b(pct(a.efect)), sem,
+        ', mientras que conseguir cada entrega te costó solo ', b(cop(a.cpa)), ', por debajo del margen máximo de ', b(cop(a.cpaMax)),
+        ' que permitía la oferta. Gracias a esto, tu ROAS real (', b(x(a.roas)), ') superó con éxito el equilibrio de ', b(x(a.roasEq)),
+        ', logrando un margen neto del ', b(pct(m)), ' y una utilidad libre en tu bolsillo de ', b('+' + cop(a.util) + ' COP'), '.'];
+    }
+
+    // En pérdida el CPA siempre supera al máximo (Ads > Wallet); la causa distingue si las devoluciones también pesan.
+    const devR = a.dev / (a.ent + a.dev), devBad = devR > 0.25;
+    const causa = a.wallet <= 0
+      ? (devBad ? ['fletes de devolución: con ', b(pct(devR)), ' de devoluciones la Wallet quedó en negativo aun antes de pautar.']
+        : ['mercancía y fletes superan lo cobrado: la Wallet quedó en negativo aun antes de pautar.'])
+      : devBad ? ['ambos: pauta costosa y fletes de devolución (', b(pct(devR)), ' de devoluciones, sobre el máximo de 25%).']
+      : ['pauta costosa: el CPA superó el máximo sostenible; las devoluciones (', b(pct(devR)), ') están en control.'];
+    const cpaMax = a.cpaMax > 0 ? ['superando el margen de ', b(cop(a.cpaMax)), ' que dejaba el producto']
+      : ['cuando el producto no dejaba margen para publicidad (', b(cop(a.cpaMax)), ')'];
+    return ['🔻 Tu transportadora entregó al ', b(pct(a.efect)), sem, ', pero conseguir cada entrega te costó ', b(cop(a.cpa)), ', ', ...cpaMax,
+      '. Por eso tu ROAS real (', b(x(a.roas)), ...(a.roasEq > 0 ? [') no alcanzó el equilibrio de ', b(x(a.roasEq))] : [') no tenía equilibrio posible con la Wallet en negativo']),
+      ', provocando un margen negativo del ', b(pct(m)), ' y un resultado final de ', b('-' + cop(Math.abs(a.util)) + ' COP'), '. ',
+      b('Causa principal:'), ' ', ...causa];
+  }
+
+  core.diagnostics = { funnel, cascade, story };
 })();

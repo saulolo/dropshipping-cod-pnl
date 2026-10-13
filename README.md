@@ -19,7 +19,7 @@ js/
     dropi.js          Reporte de órdenes Dropi
     meta.js           Facturación y métricas de campañas Meta, asignación a producto
     pnl.js            Ciclos de producto, reparto de inversión, agregado del P&L
-    diagnostics.js    Reglas de benchmark del embudo y la cascada (devuelven datos)
+    diagnostics.js    Benchmarks del embudo y la cascada, historia ejecutiva (datos)
     excel.js          Plantilla y escritura del consolidado de 20 columnas
     index.js          Solo Node: exporta todo el núcleo para pruebas
 

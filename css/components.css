@@ -42,6 +42,9 @@
 .dot.bad { background: var(--bad); box-shadow: 0 0 6px rgba(240,97,109,.5); }
 .diag-concl { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: rgba(122,115,255,.08); border-radius: 0 8px 8px 0; font-size: 13px; color: #d6daf0; }
 .diag-concl b { color: var(--fg); font-weight: 600; }
+.exec .diag-btn { margin-top: -8px; }
+.story { margin: 8px 0 0; font-size: 14px; line-height: 1.65; color: #d6daf0; text-wrap: pretty; }
+.story b { color: var(--fg); font-weight: 600; }
 
 /* Tables */
 .tablewrap { overflow-x: auto; }

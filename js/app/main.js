@@ -20,6 +20,7 @@
     app.filters.showAutoValues(a);
     ui.summary.renderHeader(a, x);
     ui.summary.renderKpis(a);
+    ui.summary.renderStory(core.diagnostics.story(a, x.producto));
     ui.cascade.draw(a);
     ui.diagnosisPanel.render('#cdiag-table', '#cdiag-concl', core.diagnostics.cascade(a));
     ui.funnel.draw(a, S.funnelMode === 'pct');
@@ -62,6 +63,7 @@
     app.dataLoader.init();
     app.save.init();
     ui.diagnosisPanel.bindToggles();
+    ui.summary.bindKpiTips();
 
     $('#funnel-mode').addEventListener('click', (e) => {
       const b = e.target.closest('[data-mode]');

@@ -37,5 +37,23 @@
 
   function hide() { $('#tip').style.display = 'none'; }
 
-  PYL.ui.tooltip = { show, showInfo, hide };
+  // Conecta un nodo .info a su explicación: tooltip al pasar el mouse o al enfocarlo con el teclado.
+  function attach(node, name, tip) {
+    node.tabIndex = 0;
+    node.setAttribute('aria-label', `${name}. ${tip.p}`);
+    node.addEventListener('mousemove', (ev) => showInfo(ev, tip));
+    node.addEventListener('mouseleave', hide);
+    node.addEventListener('blur', hide);
+    node.addEventListener('focus', () => { const r = node.getBoundingClientRect(); showInfo({ pageX: r.left + window.scrollX + r.width / 2, pageY: r.top + window.scrollY }, tip); });
+  }
+
+  // Nombre del concepto con ícono "i" y su tooltip.
+  function infoLabel(name, tip) {
+    const lab = el('span', 'info', name);
+    lab.appendChild(el('span', 'i', 'i'));
+    attach(lab, name, tip);
+    return lab;
+  }
+
+  PYL.ui.tooltip = { show, showInfo, hide, attach, infoLabel };
 })();

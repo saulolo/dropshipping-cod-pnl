@@ -98,11 +98,23 @@
     </section>
 
     <section class="kpis" aria-label="Indicadores clave">
-      <div class="card"><div class="k-label">Utilidad neta real</div><span class="k-val" id="k-util">—</span><div class="k-foot" id="k-util-f"></div><div class="chip" id="c-util"></div></div>
-      <div class="card"><div class="k-label">Margen neto real</div><span class="k-val" id="k-margen">—</span><div class="k-foot">Meta: 20%</div><div class="chip" id="c-margen"></div></div>
-      <div class="card"><div class="k-label">Efectividad de entrega</div><span class="k-val" id="k-efect">—</span><div class="k-foot" id="k-efect-f"></div><div class="chip" id="c-efect"></div></div>
-      <div class="card"><div class="k-label">ROAS real (cobrado / ads)</div><span class="k-val" id="k-roas">—</span><div class="k-foot">Equilibrio: <span id="k-roas-eq">—</span></div><div class="chip" id="c-roas"></div></div>
-      <div class="card"><div class="k-label">CPA real por entrega</div><span class="k-val" id="k-cpa">—</span><div class="k-foot">Máximo sostenible: <span id="k-cpa-max">—</span></div><div class="chip" id="c-cpa"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="util">Utilidad neta real<span class="i">i</span></span></div><span class="k-val" id="k-util">—</span><div class="k-foot" id="k-util-f"></div><div class="chip" id="c-util"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="margen">Margen neto real<span class="i">i</span></span></div><span class="k-val" id="k-margen">—</span><div class="k-foot">Meta: 20%</div><div class="chip" id="c-margen"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="efect">Efectividad de entrega<span class="i">i</span></span></div><span class="k-val" id="k-efect">—</span><div class="k-foot" id="k-efect-f"></div><div class="chip" id="c-efect"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="roas">ROAS real (cobrado / ads)<span class="i">i</span></span></div><span class="k-val" id="k-roas">—</span><div class="k-foot">Equilibrio: <span id="k-roas-eq">—</span></div><div class="chip" id="c-roas"></div></div>
+      <div class="card"><div class="k-label"><span class="info" data-tip="cpa">CPA real por entrega<span class="i">i</span></span></div><span class="k-val" id="k-cpa">—</span><div class="k-foot">Máximo sostenible: <span id="k-cpa-max">—</span></div><div class="chip" id="c-cpa"></div></div>
+    </section>
+
+    <section class="exec" aria-label="Resumen ejecutivo">
+      <button type="button" class="diag-btn" aria-expanded="false" aria-controls="story-panel">📑 Ver Resumen Ejecutivo de la Operación <span class="car" aria-hidden="true">▾</span></button>
+      <div class="diag-panel" id="story-panel">
+        <div>
+          <div class="diag-body">
+            <div class="eyebrow">Historia ejecutiva del periodo</div>
+            <p class="story" id="story"></p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="grid2">

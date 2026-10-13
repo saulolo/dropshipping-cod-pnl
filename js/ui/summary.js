@@ -1,8 +1,23 @@
-// Encabezado (título y frase resumen) y tarjetas KPI con su semáforo.
+// Encabezado (título y frase resumen), tarjetas KPI con su semáforo y tooltip, e historia ejecutiva.
 (() => {
   const PYL = globalThis.PYL;
   const { $, rich, chip } = PYL.ui.dom;
   const { nf, fmt } = PYL.core.format;
+  const tooltip = PYL.ui.tooltip;
+
+  // Explicación de cada tarjeta, enlazada por data-tip en index.html.
+  const TIPS = {
+    util: { h: '💰 Utilidad neta real', p: 'El dinero líquido final que queda en tu bolsillo tras restar del recaudo en Dropi los costos de producto, fletes de entregas, fletes de devoluciones y toda la publicidad de Meta Ads.' },
+    margen: { h: '📊 Margen neto real', p: 'Qué porcentaje de cada $100 pesos cobrados en efectivo se convirtió en ganancia limpia. Meta saludable en NovaSociety: 15% a 20%.' },
+    efect: { h: '🚚 Efectividad de entrega', p: 'De los paquetes que salieron a carretera con guía y ya cerraron ciclo, qué porcentaje cobró la transportadora con éxito. Meta Nova: 70% a 75%+.' },
+    roas: { h: '📈 ROAS real (cobrado / ads)', p: 'Cuántos pesos en EFECTIVO cobrado te devolvió cada $1 peso invertido en anuncios. Si tu ROAS real es menor al "Equilibrio", estás perdiendo dinero.' },
+    cpa: { h: '🎯 CPA real por entrega', p: 'Cuánto dinero en publicidad tuviste que gastar para lograr que 1 cliente reciba y pague en mano. Si supera el "Máximo sostenible", cada entrega pierde dinero.' },
+  };
+
+  // Una sola vez al arrancar: las etiquetas de las tarjetas son estáticas.
+  function bindKpiTips() {
+    document.querySelectorAll('.kpis [data-tip]').forEach((n) => tooltip.attach(n, n.firstChild.textContent, TIPS[n.dataset.tip]));
+  }
 
   function renderHeader(a, x) {
     $('#title').textContent = `${x.producto} · ${x.periodo || 'Todo el periodo'}`;
@@ -37,5 +52,8 @@
     } else chip('#c-cpa');
   }
 
-  PYL.ui.summary = { renderHeader, renderKpis };
+  // story: segmentos de PYL.core.diagnostics.story.
+  function renderStory(story) { rich($('#story'), story); }
+
+  PYL.ui.summary = { bindKpiTips, renderHeader, renderKpis, renderStory };
 })();

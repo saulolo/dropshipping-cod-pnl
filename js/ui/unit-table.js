@@ -3,7 +3,7 @@
   const PYL = globalThis.PYL;
   const { $, el } = PYL.ui.dom;
   const { fmt } = PYL.core.format;
-  const tooltip = PYL.ui.tooltip;
+  const { infoLabel } = PYL.ui.tooltip;
 
   // Explicación de cada concepto. li: [antes, palabra resaltada, clase, después].
   const TIPS = {
@@ -16,18 +16,6 @@
     ads: { h: '📢 Meta Ads', p: 'Inversión publicitaria real pagada a Meta para que un cliente efectivamente reciba y pague.' },
     util: { h: '💰 Utilidad', p: 'Dinero líquido que te queda en el bolsillo por cada pedido entregado tras pagar producto, fletes, devoluciones y publicidad.' },
   };
-
-  // Nombre del concepto con ícono "i": tooltip al pasar el mouse o al enfocarlo con el teclado.
-  function infoLabel(name, tip) {
-    const lab = el('span', 'info', name); lab.tabIndex = 0;
-    lab.appendChild(el('span', 'i', 'i'));
-    lab.setAttribute('aria-label', `${name}. ${tip.p}`);
-    lab.addEventListener('mousemove', (ev) => tooltip.showInfo(ev, tip));
-    lab.addEventListener('mouseleave', tooltip.hide);
-    lab.addEventListener('blur', tooltip.hide);
-    lab.addEventListener('focus', () => { const r = lab.getBoundingClientRect(); tooltip.showInfo({ pageX: r.left + window.scrollX + r.width / 2, pageY: r.top + window.scrollY }, tip); });
-    return lab;
-  }
 
   function draw(a) {
     const tb = $('#unit-table tbody'); tb.textContent = '';
