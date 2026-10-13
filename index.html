@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P&amp;L COD · NovaSociety</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root {
+  --bg: #0a0d14;
+  --panel: #10151f;
+  --panel-2: #151b27;
+  --line: #222a39;
+  --fg: #e7eaf0;
+  --muted: #8a93a6;
+  --faint: #5b6478;
+  --accent: #7a73ff;
+  --accent-2: #a39eff;
+  --ok: #34c38f;
+  --warn: #f2b84b;
+  --bad: #f0616d;
+  --cost: #e0707b;
+  --bar-muted: #2a3243;
+  --grid: #1c2331;
+  --radius: 12px;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.45; }
+body { min-height: 100vh; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
+.muted { color: var(--muted); }
+.ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+
+/* Header */
+.eyebrow { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(24px, 3.4vw, 34px); margin: 4px 0 0; text-wrap: balance; }
+.take { margin: 8px 0 0; max-width: 78ch; color: #c9cedb; }
+.take b { color: var(--fg); font-weight: 600; }
+
+/* Cards */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.card h2 { font-size: 15px; font-weight: 600; margin: 0; }
+.note { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
+
+/* Upload */
+.upload { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+#camp-table select { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; max-width: 260px; }
+#camp-table tr.off td { color: var(--faint); }
+.drop { position: relative; border: 1px dashed #34405a; border-radius: var(--radius); padding: 18px; background: var(--panel); cursor: pointer; transition: border-color .15s, background .15s; display: flex; gap: 14px; align-items: flex-start; }
+.drop:hover, .drop.over { border-color: var(--accent); background: #12172a; }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop .ico { flex: none; width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: #1b2133; color: var(--accent-2); font-weight: 600; font-size: 12px; }
+.drop .t { font-weight: 600; }
+.drop .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.drop .st { font-size: 12px; margin-top: 8px; }
+.drop.done { border-style: solid; border-color: #2b5a49; }
+.drop.err { border-style: solid; border-color: #6b2f37; }
+
+/* Filters */
+.bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.field input, .field select { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; min-width: 0; }
+.field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(122,115,255,.18); }
+.field select { min-width: 220px; }
+.field.grow { flex: 1 1 200px; }
+.sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font: inherit; font-weight: 500; padding: 9px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: #3a4560; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #6a62f5; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 9px 8px; }
+.btn.ghost:hover { color: var(--fg); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 12px; }
+.k-label { font-size: 12px; color: var(--muted); }
+.k-val { display: block; font-family: var(--serif); font-size: 30px; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-foot { font-size: 12px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 10px; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip:empty { display: none; }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 12px; }
+.chart { position: relative; min-height: 300px; }
+.tip { position: absolute; z-index: 5; background: #1a2030; border: 1px solid #2c3550; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); padding: 8px 10px; font-size: 12px; pointer-events: none; white-space: nowrap; font-variant-numeric: tabular-nums; display: none; }
+.tip .t { color: var(--muted); }
+
+/* Funnel */
+.funnel { display: flex; flex-direction: column; gap: 6px; }
+.f-row { display: grid; grid-template-columns: 7.5rem 1fr 3.5rem; gap: 10px; align-items: center; }
+.f-bar { height: 24px; border-radius: 5px; background: var(--bar-muted); transition: width .3s; }
+.f-val { text-align: right; font-variant-numeric: tabular-nums; }
+.f-loss { padding-left: calc(7.5rem + 10px); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.f-loss.worst { color: var(--bad); }
+.stack { display: flex; height: 14px; border-radius: 5px; overflow: hidden; margin-top: 18px; gap: 2px; background: var(--grid); }
+.stack div { transition: flex .3s; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 10px; font-variant-numeric: tabular-nums; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+
+/* Tables */
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: right; font-weight: 500; font-size: 12px; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { text-align: right; padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+tbody tr:last-child td { border-bottom: none; }
+.cellbar { display: inline-block; height: 8px; border-radius: 4px; vertical-align: middle; margin-right: 8px; }
+#prod-table tbody tr { cursor: pointer; }
+#prod-table tbody tr:hover td { background: var(--panel-2); }
+#prod-table tbody tr.sel td { background: #161a33; }
+tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
+
+/* Notices / save */
+.notices { display: flex; flex-direction: column; gap: 6px; }
+.notices:empty { display: none; }
+.notice { font-size: 12px; padding: 8px 12px; border-radius: 8px; background: #19160d; border: 1px solid #3d3216; color: #e8cf8f; }
+.notice.info { background: #10162a; border-color: #232d52; color: #b4bdf0; }
+.notice.error { background: #1d0f12; border-color: #4d2129; color: #f3a7ae; }
+.savebar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.savebar .who { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.savebar .who b { color: var(--fg); font-weight: 500; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; background: #1a2030; border: 1px solid #2c3550; color: var(--fg); padding: 10px 16px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.5); transition: all .2s; z-index: 50; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok { border-color: #2b5a49; } .toast.error { border-color: #6b2f37; }
+.modal-bg { position: fixed; inset: 0; background: rgba(4,6,10,.7); display: none; align-items: center; justify-content: center; z-index: 40; padding: 16px; }
+.modal-bg.show { display: flex; }
+.modal { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; max-width: 460px; width: 100%; }
+.modal h3 { margin: 0 0 8px; font-size: 16px; }
+.modal p { margin: 0 0 18px; color: #c9cedb; }
+.modal .actions { justify-content: flex-end; }
+.hidden { display: none !important; }
+#dash { display: flex; flex-direction: column; gap: 20px; }
+
+@media (max-width: 560px) {
+  .f-row { grid-template-columns: 5.5rem 1fr 3rem; }
+  .f-loss { padding-left: calc(5.5rem + 10px); }
+  .field select { min-width: 0; width: 100%; }
+  .field { flex: 1 1 100%; }
+  .field input { width: 100% !important; }
+  .sep { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">P&amp;L contra entrega · Meta Ads + Dropi</div>
+    <h1 id="title">Carga tus reportes para auditar el periodo</h1>
+    <p class="take" id="take">Sube el reporte de órdenes de Dropi (.xlsx o .csv) y la facturación de Meta Ads (.csv). Todo se procesa en este navegador: los archivos no salen de tu computador.</p>
+  </header>
+
+  <section class="upload" aria-label="Carga de archivos">
+    <label class="drop" id="drop-dropi">
+      <input type="file" id="file-dropi" accept=".xlsx,.csv,.txt" multiple>
+      <div class="ico">DR</div>
+      <div>
+        <div class="t">Reporte de órdenes Dropi</div>
+        <div class="s">.xlsx o .csv (separado por ;). Arrastra aquí o haz clic.</div>
+        <div class="st muted" id="st-dropi">Sin archivo</div>
+      </div>
+    </label>
+    <label class="drop" id="drop-meta">
+      <input type="file" id="file-meta" accept=".csv,.xlsx,.txt" multiple>
+      <div class="ico">MA</div>
+      <div>
+        <div class="t">Facturación Meta (presupuesto)</div>
+        <div class="s">Resumen de facturación .csv. Es el gasto real con IVA.</div>
+        <div class="st muted" id="st-meta">Sin archivo</div>
+      </div>
+    </label>
+    <label class="drop" id="drop-metrics">
+      <input type="file" id="file-metrics" accept=".csv,.xlsx,.txt" multiple>
+      <div class="ico">MC</div>
+      <div>
+        <div class="t">Métricas de campañas Meta</div>
+        <div class="s">Export del Administrador de anuncios .csv. Reparte el gasto por producto y trae compras y CTR.</div>
+        <div class="st muted" id="st-metrics">Sin archivo</div>
+      </div>
+    </label>
+  </section>
+
+  <div class="notices" id="notices"></div>
+
+  <main id="dash" class="hidden">
+
+    <section class="card" aria-label="Filtros">
+      <div class="bar">
+        <div class="field">
+          <label for="f-prod">Producto</label>
+          <select id="f-prod"></select>
+        </div>
+        <div class="field">
+          <label for="f-from">Fecha inicial</label>
+          <input type="date" id="f-from">
+        </div>
+        <div class="field">
+          <label for="f-to">Fecha final</label>
+          <input type="date" id="f-to">
+        </div>
+        <button class="btn ghost" id="f-reset" type="button">Restablecer</button>
+        <div class="sep"></div>
+        <div class="field">
+          <label for="f-ads">Inversión Ads manual</label>
+          <input type="text" inputmode="numeric" id="f-ads" placeholder="Automático" style="width:150px">
+        </div>
+        <div class="field grow">
+          <label for="f-camp">Campaña / Ángulo</label>
+          <input type="text" id="f-camp" placeholder="General">
+        </div>
+        <div class="field">
+          <label for="f-buys">Compras Ads</label>
+          <input type="text" inputmode="numeric" id="f-buys" placeholder="—" style="width:110px">
+        </div>
+        <div class="field">
+          <label for="f-ctr">CTR único %</label>
+          <input type="text" inputmode="decimal" id="f-ctr" placeholder="—" style="width:100px">
+        </div>
+      </div>
+    </section>
+
+    <section class="kpis" aria-label="Indicadores clave">
+      <div class="card"><div class="k-label">Utilidad neta real</div><span class="k-val" id="k-util">—</span><div class="k-foot" id="k-util-f"></div><div class="chip" id="c-util"></div></div>
+      <div class="card"><div class="k-label">Margen neto real</div><span class="k-val" id="k-margen">—</span><div class="k-foot">Meta: 20%</div><div class="chip" id="c-margen"></div></div>
+      <div class="card"><div class="k-label">Efectividad de entrega</div><span class="k-val" id="k-efect">—</span><div class="k-foot" id="k-efect-f"></div><div class="chip" id="c-efect"></div></div>
+      <div class="card"><div class="k-label">ROAS real (cobrado / ads)</div><span class="k-val" id="k-roas">—</span><div class="k-foot">Equilibrio: <span id="k-roas-eq">—</span></div><div class="chip" id="c-roas"></div></div>
+      <div class="card"><div class="k-label">CPA real por entrega</div><span class="k-val" id="k-cpa">—</span><div class="k-foot">Máximo sostenible: <span id="k-cpa-max">—</span></div><div class="chip" id="c-cpa"></div></div>
+    </section>
+
+    <section class="grid2">
+      <div class="card">
+        <h2>De lo cobrado a tu bolsillo</h2>
+        <p class="note">Cascada P&amp;L del filtro actual. Pasa el cursor por cada barra.</p>
+        <div class="chart" id="cascade"></div>
+      </div>
+      <div class="card">
+        <h2>Embudo logístico COD</h2>
+        <p class="note" id="funnel-note">Pedidos únicos de Dropi en el filtro actual.</p>
+        <div class="funnel" id="funnel"></div>
+        <div class="stack" id="stack"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Unit economics por pedido entregado</h2>
+      <p class="note">Cómo se reparte el ticket promedio. Las devoluciones (ida + retorno) se reparten sobre lo entregado.</p>
+      <div class="tablewrap">
+        <table id="unit-table">
+          <thead><tr><th>Concepto</th><th>COP por entrega</th><th>% del ticket</th><th>Total del periodo</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Desglose por producto</h2>
+      <p class="note" id="prod-note">Clic en una fila para filtrar.</p>
+      <div class="tablewrap">
+        <table id="prod-table">
+          <thead><tr><th>Producto</th><th>Recibidos</th><th>Entregados</th><th>Devueltos</th><th>Efectividad</th><th>Cobrado</th><th>Ads asignado</th><th>Wallet Dropi</th><th>Utilidad</th><th>Margen</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card hidden" id="camps-card">
+      <h2>Campañas Meta</h2>
+      <p class="note">Cada campaña se asigna a un producto de Dropi por su nombre. Corrige la asignación aquí y la app la recuerda. Gasto sin IVA, según el Administrador de anuncios.</p>
+      <div class="tablewrap">
+        <table id="camp-table">
+          <thead><tr><th>Campaña</th><th>Producto asignado</th><th>Gastado</th><th>Compras</th><th>CPA Meta</th><th>CTR único</th><th>Pagos iniciados</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card savebar">
+      <div>
+        <h2>Guardar registro</h2>
+        <div class="who" id="save-who"></div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btn-unlink" type="button">Cambiar archivo</button>
+        <button class="btn" id="btn-export" type="button">Exportar a Excel</button>
+        <button class="btn primary" id="btn-save" type="button">Guardar en consolidado</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<div class="modal-bg" id="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-h">
+    <h3 id="modal-h">Registro duplicado</h3>
+    <p id="modal-p"></p>
+    <div class="actions">
+      <button class="btn ghost" data-r="cancel" type="button">Cancelar</button>
+      <button class="btn" data-r="append" type="button">Agregar como nueva fila</button>
+      <button class="btn primary" data-r="overwrite" type="button">Sobrescribir</button>
+    </div>
+  </div>
+</div>
+
+<script id="engine">
+// ===== ENGINE START =====
+// Parseo, clasificación y cálculos. Sin DOM: también corre en Node para pruebas.
+const ENGINE = (() => {
+  const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+  const pad = (n) => String(n).padStart(2, '0');
+  const MONTHS = { ENE: 1, JAN: 1, FEB: 2, MAR: 3, ABR: 4, APR: 4, MAY: 5, JUN: 6, JUL: 7, AGO: 8, AUG: 8, SEP: 9, SET: 9, OCT: 10, NOV: 11, DIC: 12, DEC: 12 };
+  const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const iso = (y, m, d) => (y > 1900 && m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}-${pad(m)}-${pad(d)}` : null);
+
+  // Fechas de Dropi (dd-mm-aaaa), Meta (dd/mm/aaaa, aaaa-mm-dd, "12 oct 2026"), Date o serial de Excel.
+  function toISO(v) {
+    if (v == null || v === '') return null;
+    if (v instanceof Date) return isNaN(v) ? null : iso(v.getUTCFullYear(), v.getUTCMonth() + 1, v.getUTCDate());
+    if (typeof v === 'number') return v > 20000 && v < 80000 ? toISO(new Date(Math.round((v - 25569) * 864e5))) : null;
+    const s = String(v).trim();
+    let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (m) return iso(+m[1], +m[2], +m[3]);
+    m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+    if (m) {
+      let y = +m[3]; if (y < 100) y += 2000;
+      return +m[2] > 12 ? iso(y, +m[1], +m[2]) : iso(y, +m[2], +m[1]);
+    }
+    const n = norm(s).replace(/\./g, '');
+    m = n.match(/(\d{1,2})\s*(?:DE\s+)?([A-Z]{3})[A-Z]*\s*(?:DE\s+)?(\d{4})/);
+    if (m && MONTHS[m[2]]) return iso(+m[3], MONTHS[m[2]], +m[1]);
+    m = n.match(/([A-Z]{3})[A-Z]*\s+(\d{1,2}),?\s+(\d{4})/);
+    if (m && MONTHS[m[1]]) return iso(+m[3], MONTHS[m[1]], +m[2]);
+    return null;
+  }
+
+  // Números: Dropi usa coma decimal ("18295,1"); Meta usa punto de mil ("100.000 COP").
+  function num(v, commaDecimal) {
+    if (v == null || v === '') return 0;
+    if (typeof v === 'number') return isFinite(v) ? v : 0;
+    let s = String(v).replace(/[^\d,.-]/g, '');
+    if (!s || s === '-') return 0;
+    const c = s.lastIndexOf(','), d = s.lastIndexOf('.');
+    if (c > -1 && d > -1) s = c > d ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    else if (c > -1) s = !commaDecimal && /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.slice(0, c).replace(/,/g, '') + '.' + s.slice(c + 1);
+    else if (d > -1 && /^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    const out = parseFloat(s);
+    return isFinite(out) ? out : 0;
+  }
+
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, '');
+    const head = text.split(/\r?\n/, 5).join('\n');
+    const delim = [';', ',', '\t'].map((dl) => [dl, head.split(dl).length]).sort((a, b) => b[1] - a[1])[0][0];
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === delim) { row.push(f); f = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        row.push(f); rows.push(row); row = []; f = '';
+      } else f += ch;
+    }
+    if (f !== '' || row.length) { row.push(f); rows.push(row); }
+    return rows.filter((r) => r.some((c) => String(c).trim() !== ''));
+  }
+
+  // Valor plano de una celda de ExcelJS.
+  function cellVal(cell) {
+    const v = cell.value;
+    if (v && typeof v === 'object' && !(v instanceof Date)) {
+      if (v.richText) return v.richText.map((t) => t.text).join('');
+      if ('result' in v) return v.result;
+      if ('text' in v) return v.text;
+      if (v.error) return null;
+    }
+    return v;
+  }
+
+  const isDropi = (rows) => rows.slice(0, 10).some((r) => r.map(norm).includes('ESTATUS'));
+
+  function classify(s) {
+    if (/DEVOLU|DEVUELT/.test(s)) return 'dev';
+    if (/CANCELAD|RECHAZAD|ANULAD/.test(s)) return 'can';
+    if (/^ENTREGAD/.test(s) && !/TRANSPORTADORA/.test(s)) return 'ent';
+    if (/PENDIENTE/.test(s)) return 'pen';
+    return 'rut';
+  }
+
+  const DROPI_COLS = {
+    id: 'ID', status: 'ESTATUS', total: 'TOTAL DE LA ORDEN', flete: 'PRECIO FLETE',
+    dev: 'COSTO DEVOLUCION FLETE', prov: 'PRECIO PROVEEDOR X CANTIDAD', prod: 'PRODUCTO', date: 'FECHA',
+  };
+
+  // Dropi exporta una fila por producto. TOTAL, FLETE y PROVEEDOR vienen por línea;
+  // COSTO DEVOLUCION FLETE se repite en cada línea de la orden, así que se toma una vez
+  // y se reparte entre líneas según su flete.
+  function buildDropi(rows) {
+    const hi = rows.findIndex((r) => r.map(norm).includes('ESTATUS'));
+    if (hi < 0) throw new Error('No encontré la columna ESTATUS. ¿Es el reporte de órdenes de Dropi?');
+    const H = rows[hi].map(norm);
+    const idx = {}, missing = [];
+    for (const [k, name] of Object.entries(DROPI_COLS)) {
+      idx[k] = H.indexOf(name);
+      if (idx[k] < 0) missing.push(name);
+    }
+    if (missing.length) throw new Error('Faltan columnas en Dropi: ' + missing.join(', '));
+    const lines = [];
+    let noDate = 0;
+    for (const r of rows.slice(hi + 1)) {
+      const id = String(r[idx.id] ?? '').trim();
+      if (!id) continue;
+      const status = norm(r[idx.status]);
+      const date = toISO(r[idx.date]);
+      if (!date) noDate++;
+      lines.push({
+        id, status, cls: classify(status), date,
+        prod: String(r[idx.prod] ?? '').trim() || '(sin producto)',
+        total: num(r[idx.total], true), flete: num(r[idx.flete], true),
+        devRaw: num(r[idx.dev], true), prov: num(r[idx.prov], true),
+      });
+    }
+    if (!lines.length) throw new Error('El reporte de Dropi no tiene órdenes.');
+    const byId = new Map();
+    lines.forEach((l) => { if (!byId.has(l.id)) byId.set(l.id, []); byId.get(l.id).push(l); });
+    byId.forEach((ls) => {
+      const dev = Math.max(...ls.map((l) => l.devRaw));
+      const fs = ls.reduce((s, l) => s + l.flete, 0);
+      ls.forEach((l) => { l.dev = dev ? (fs ? (dev * l.flete) / fs : dev / ls.length) : 0; });
+    });
+    return { lines, noDate, orders: byId.size };
+  }
+
+  const META_H = {
+    date: (h) => /^FECHA|^DIA$|^DAY$|^DATE|INICIO DEL INFORME|REPORTING STARTS/.test(h),
+    amt: (h) => /^IMPORTE|AMOUNT|GASTADO|^MONTO|^VALOR/.test(h),
+    cur: (h) => /^DIVISA|^MONEDA|^CURRENCY/.test(h),
+    status: (h) => /^ESTADO|^STATUS/.test(h),
+    method: (h) => /METODO DE PAGO|PAYMENT METHOD/.test(h),
+  };
+
+  // Resumen de facturación de Meta. En cuentas prepago trae dos tipos de fila:
+  // recargas de saldo (método = tarjeta) y gasto descontado del saldo (método = "No disponible").
+  // Solo el gasto cuenta como inversión; sumar ambas duplicaría la cifra.
+  function buildMeta(rows) {
+    const hi = rows.slice(0, 25).findIndex((r) => { const H = r.map(norm); return H.some(META_H.date) && H.some(META_H.amt); });
+    if (hi < 0) throw new Error('No encontré columnas de Fecha e Importe en el archivo de Meta.');
+    const H = rows[hi].map(norm);
+    const ix = {};
+    for (const k of Object.keys(META_H)) ix[k] = H.findIndex(META_H[k]);
+    const parsed = [];
+    let skipped = 0, billed = null;
+    const otherCur = new Set();
+    for (const r of rows.slice(hi + 1)) {
+      const label = r.map(norm).find((c) => /IMPORTE TOTAL FACTURADO|TOTAL BILLED|TOTAL AMOUNT BILLED/.test(c));
+      if (label) { billed = num(r[ix.amt], false); continue; }
+      const date = toISO(r[ix.date]);
+      const amt = num(r[ix.amt], false);
+      if (!date || !amt) continue;
+      if (ix.status > -1 && /FALL|RECHAZ|DECLIN|FAIL|REEMBOLS|REFUND|CANCEL/.test(norm(r[ix.status]))) { skipped++; continue; }
+      const curTxt = norm(ix.cur > -1 ? r[ix.cur] : (String(r[ix.amt]).match(/[A-Za-z]{3}/) || [''])[0]);
+      if (curTxt && curTxt !== 'COP') otherCur.add(curTxt);
+      parsed.push({ date, amt, method: ix.method > -1 ? norm(r[ix.method]) : '' });
+    }
+    const isSpend = (m) => /NO DISPONIBLE|NOT AVAILABLE/.test(m);
+    const prepaid = parsed.some((p) => isSpend(p.method)) && parsed.some((p) => !isSpend(p.method));
+    const out = prepaid ? parsed.filter((p) => isSpend(p.method)) : parsed;
+    const deposits = prepaid ? parsed.filter((p) => !isSpend(p.method)) : [];
+    if (!out.length) throw new Error('El archivo de Meta no tiene cobros con fecha e importe válidos.');
+    return {
+      rows: out, skipped, otherCur: [...otherCur], billed, prepaid,
+      depositsN: deposits.length, depositsTotal: deposits.reduce((s, p) => s + p.amt, 0),
+    };
+  }
+
+  // Export de campañas del Administrador de anuncios (una fila por campaña, o por campaña y día).
+  const MET_H = {
+    start: (h) => /^INICIO DEL INFORME|^REPORTING STARTS/.test(h),
+    end: (h) => /^FIN DEL INFORME|^REPORTING ENDS/.test(h),
+    day: (h) => /^DIA$|^DAY$/.test(h),
+    camp: (h) => /^NOMBRE DE LA CAMPANA|^CAMPAIGN NAME/.test(h),
+    status: (h) => /^ENTREGA DE LA CAMPANA|^CAMPAIGN DELIVERY/.test(h),
+    results: (h) => /^RESULTADOS$|^RESULTS$/.test(h),
+    indicator: (h) => /^INDICADOR DE RESULTADO$|^RESULT INDICATOR$/.test(h),
+    spend: (h) => /^MONTO GASTADO|^IMPORTE GASTADO|^AMOUNT SPENT/.test(h),
+    impr: (h) => /^IMPRESIONES$|^IMPRESSIONS$/.test(h),
+    checkouts: (h) => /^PAGOS INICIADOS$|^CHECKOUTS INITIATED$/.test(h),
+    ctr: (h) => /^CTR UNICO|^UNIQUE CTR/.test(h),
+  };
+  const isMetrics = (rows) => rows.slice(0, 10).some((r) => { const H = r.map(norm); return H.some(MET_H.camp) && H.some(MET_H.spend); });
+
+  function buildMetrics(rows) {
+    const hi = rows.slice(0, 10).findIndex((r) => { const H = r.map(norm); return H.some(MET_H.camp) && H.some(MET_H.spend); });
+    if (hi < 0) throw new Error('No encontré "Nombre de la campaña" y "Monto gastado" en el reporte de métricas.');
+    const H = rows[hi].map(norm);
+    const ix = {};
+    for (const k of Object.keys(MET_H)) ix[k] = H.findIndex(MET_H[k]);
+    // El export usa punto decimal ("20469.55"); si viene con separadores de mil, usa num().
+    const nm = (v) => { const s = String(v ?? '').trim(); return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : num(s, false); };
+    const get = (r, k) => (ix[k] > -1 ? r[ix[k]] : null);
+    const camps = [];
+    for (const r of rows.slice(hi + 1)) {
+      const name = String(get(r, 'camp') ?? '').trim();
+      if (!name) continue;
+      const day = toISO(get(r, 'day'));
+      const ind = norm(get(r, 'indicator'));
+      camps.push({
+        name,
+        start: day || toISO(get(r, 'start')), end: day || toISO(get(r, 'end')),
+        status: String(get(r, 'status') ?? '').trim(),
+        spend: nm(get(r, 'spend')),
+        purchases: !ind || /PURCHASE|COMPRA/.test(ind) ? nm(get(r, 'results')) : 0,
+        impr: nm(get(r, 'impr')), checkouts: nm(get(r, 'checkouts')), ctr: nm(get(r, 'ctr')),
+      });
+    }
+    if (!camps.length) throw new Error('El reporte de métricas no tiene campañas.');
+    const starts = camps.map((c) => c.start).filter(Boolean).sort();
+    const ends = camps.map((c) => c.end).filter(Boolean).sort();
+    return { camps, names: [...new Set(camps.map((c) => c.name))], from: starts[0] || null, to: ends[ends.length - 1] || null };
+  }
+
+  // Asigna una campaña ("16 SEP - CREMA ARBUTIN") al producto de Dropi con más palabras en común.
+  const STOP = new Set(['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'SET', 'OCT', 'NOV', 'DIC', 'CON', 'DEL', 'LOS', 'LAS', 'POR', 'PARA', 'CAJA', 'CAMPANA', 'VENTAS', 'CBO', 'ABO', 'TEST']);
+  const toks = (s) => norm(s).split(/[^A-Z0-9]+/).filter((t) => t.length >= 3 && !/^\d+$/.test(t) && !STOP.has(t));
+  function matchProduct(name, prods) {
+    const ct = toks(name);
+    let best = null, score = 0;
+    prods.forEach((p) => {
+      const pt = toks(p);
+      const s = ct.filter((t) => pt.some((q) => q === t || (t.length >= 4 && q.length >= 4 && (q.startsWith(t) || t.startsWith(q))))).length;
+      if (s > score) { score = s; best = p; }
+    });
+    return best;
+  }
+
+  const div = (a, b) => (b ? a / b : null);
+  const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+
+  // f: { prod: '__all' | nombre, from, to, adsOverride: number|null }
+  // mx: { camps, map: {campaña: producto|null} } o null si no hay reporte de métricas.
+  function aggregate(lines, meta, f, mx) {
+    const inRange = (d) => !!d && (!f.from || d >= f.from) && (!f.to || d <= f.to);
+    const rangeLines = lines.filter((l) => inRange(l.date));
+    const sel = f.prod === '__all' ? rangeLines : rangeLines.filter((l) => l.prod === f.prod);
+    const orders = new Map();
+    sel.forEach((l) => orders.set(l.id, l.cls));
+    const c = { rec: orders.size, can: 0, ent: 0, dev: 0, rut: 0, pen: 0 };
+    orders.forEach((k) => c[k]++);
+    const sum = (cls, k) => sel.reduce((s, l) => s + (l.cls === cls ? l[k] : 0), 0);
+    const fact = sum('ent', 'total'), merc = sum('ent', 'prov');
+    const fEnt = sum('ent', 'flete'), fDevIda = sum('dev', 'flete'), fRet = sum('dev', 'dev');
+    const fletes = fEnt + fDevIda + fRet;
+
+    // Métricas: una fila que cubre un rango más largo que el filtro se prorratea por días.
+    const all = f.prod === '__all';
+    const overlap = (cp) => {
+      if (!cp.start || !cp.end) return 1;
+      const a = f.from && f.from > cp.start ? f.from : cp.start;
+      const b = f.to && f.to < cp.end ? f.to : cp.end;
+      return a > b ? 0 : (days(a, b) + 1) / (days(cp.start, cp.end) + 1);
+    };
+    const camps = mx ? mx.camps.map((cp) => ({ ...cp, k: overlap(cp), prod: mx.map[cp.name] ?? null })).filter((cp) => cp.k > 0) : [];
+    const selCamps = all ? camps : camps.filter((cp) => cp.prod === f.prod);
+    const csum = (list, fn) => list.reduce((s, cp) => s + fn(cp) * cp.k, 0);
+    const mSpendAll = csum(camps, (cp) => cp.spend);
+    const mSpendSel = csum(selCamps, (cp) => cp.spend);
+    const mUnassigned = csum(camps.filter((cp) => !cp.prod), (cp) => cp.spend);
+
+    // Inversión = facturación (gasto real con IVA). Se reparte por producto según el gasto
+    // de sus campañas; sin métricas, según la facturación de pedidos recibidos.
+    const metaR = meta.filter((m) => inRange(m.date));
+    const billTotal = metaR.reduce((s, m) => s + m.amt, 0);
+    const adsTotal = meta.length ? billTotal : mSpendAll;
+    const totAll = rangeLines.reduce((s, l) => s + l.total, 0);
+    const totSel = sel.reduce((s, l) => s + l.total, 0);
+    const shareSource = all ? null : mSpendAll ? 'metricas' : 'facturacion';
+    const share = all ? 1 : mSpendAll ? mSpendSel / mSpendAll : div(totSel, totAll) || 0;
+    const adsAuto = adsTotal * share;
+    const ads = f.adsOverride != null ? f.adsOverride : adsAuto;
+
+    const buys = camps.length ? Math.round(csum(selCamps, (cp) => cp.purchases)) : null;
+    const imprW = csum(selCamps.filter((cp) => cp.ctr > 0), (cp) => cp.impr);
+    const ctr = imprW ? csum(selCamps.filter((cp) => cp.ctr > 0), (cp) => cp.ctr * cp.impr) / imprW : null;
+    const active = [...new Set(selCamps.filter((cp) => cp.spend > 0).map((cp) => cp.name))];
+    const campAuto = !all && active.length ? active.join(' + ') : null;
+
+    const wallet = fact - merc - fletes;
+    const util = wallet - ads;
+    return {
+      ...c, desp: c.rec - c.can, ruta: c.rut + c.pen,
+      fact, merc, fEnt, fDevIda, fRet, fletes, wallet, util,
+      ads, adsAuto, adsTotal, billTotal, share, shareSource, metaN: metaR.length,
+      buys, ctr, campAuto, mSpendAll, mSpendSel, mUnassigned,
+      checkouts: camps.length ? Math.round(csum(selCamps, (cp) => cp.checkouts)) : null,
+      cpaMeta: buys ? mSpendSel / buys : null,
+      partial: camps.some((cp) => cp.k < 1),
+      iva: meta.length && mSpendAll ? billTotal / mSpendAll - 1 : null,
+      margen: div(util, fact), efect: div(c.ent, c.ent + c.dev), roas: div(fact, ads), roasEq: div(fact, wallet),
+      cpa: div(ads, c.ent), cpaMax: div(wallet, c.ent), pesoCostos: div(fletes + ads, fact),
+    };
+  }
+
+  function products(lines) {
+    const n = new Map();
+    lines.forEach((l) => n.set(l.prod, (n.get(l.prod) || 0) + 1));
+    return [...n.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
+  }
+
+  function periodLabel(from, to) {
+    if (!from || !to) return '';
+    const p = (s) => ({ y: +s.slice(0, 4), m: +s.slice(5, 7), d: +s.slice(8, 10) });
+    const a = p(from), b = p(to);
+    const fmt = (x, y) => `${pad(x.d)} ${MES[x.m - 1]}${y ? ' ' + x.y : ''}`;
+    if (from === to) return fmt(a, true);
+    return a.y === b.y ? `${fmt(a)} - ${fmt(b)}` : `${fmt(a, true)} - ${fmt(b, true)}`;
+  }
+
+  // ===== Excel: 20 columnas del Registro =====
+  const COP_FMT = '"$"#,##0;[Red]\\-"$"#,##0';
+  const FMT = ['@', '@', '@', COP_FMT, '#,##0', COP_FMT, '0.0%', '#,##0', '#,##0', '#,##0', '#,##0', '#,##0', '#,##0', '0.0%', COP_FMT, COP_FMT, COP_FMT, COP_FMT, COP_FMT, '0.0%'];
+  const HEADERS = ['Fecha / Periodo', 'Producto', 'Campaña / Ángulo', 'Inversión Ads COP', 'Compras Ads', 'CPA Meta COP ƒ', 'CTR Único %',
+    'Pedidos Recibidos', 'Pedidos Cancelados', 'Pedidos Despachados ƒ', 'Pedidos Entregados', 'Pedidos Devueltos', 'Pedidos en Ruta',
+    '% Efectividad Entrega ƒ', 'Facturación Cobrada COP', 'Costo Mercancía COP', 'Costo Fletes Total COP',
+    'Ganancia Wallet Dropi COP ƒ', 'Utilidad Neta Real COP ƒ', 'Margen Neto Real % ƒ'];
+
+  // x: { periodo, producto, campana, compras, ctr }  (ctr como fracción: 0.058 = 5,8%)
+  function rowCells(a, x, r) {
+    const R = Math.round;
+    const ads = R(a.ads), fact = R(a.fact), merc = R(a.merc), fl = R(a.fletes);
+    const wallet = fact - merc - fl, util = wallet - ads;
+    const F = (formula, result) => ({ formula, result: result == null ? '' : result });
+    return [
+      x.periodo, x.producto, x.campana || 'General', ads,
+      x.compras == null ? null : x.compras,
+      F(`IF(E${r}>0,D${r}/E${r},"")`, x.compras > 0 ? ads / x.compras : null),
+      x.ctr == null ? null : x.ctr,
+      a.rec, a.can, F(`IF(H${r}="","",H${r}-I${r})`, a.rec - a.can),
+      a.ent, a.dev, a.ruta,
+      F(`IF((K${r}+L${r})>0,K${r}/(K${r}+L${r}),"")`, a.ent + a.dev > 0 ? a.ent / (a.ent + a.dev) : null),
+      fact, merc, fl,
+      F(`IF(O${r}="","",O${r}-P${r}-Q${r})`, wallet),
+      F(`IF(R${r}="","",R${r}-D${r})`, util),
+      F(`IF(N(O${r})>0,S${r}/O${r},"")`, fact > 0 ? util / fact : null),
+    ];
+  }
+
+  const txt = (c) => { const v = cellVal(c); return v == null ? '' : String(v); };
+
+  // Escribe la fila en la hoja Registro del consolidado (workbook de ExcelJS ya cargado).
+  // onDuplicate: 'ask' (devuelve {dup}) | 'overwrite' | 'append'
+  function writeRegistro(wb, a, x, onDuplicate) {
+    const ws = wb.getWorksheet('Registro') || wb.worksheets[0];
+    let hr = 0;
+    for (let r = 1; r <= 15 && !hr; r++) if (norm(txt(ws.getCell(r, 1))) === 'FECHA / PERIODO') hr = r;
+    if (!hr) throw new Error('No encontré el encabezado "Fecha / Periodo" en la hoja Registro.');
+    const first = hr + 1, last = Math.max(ws.rowCount, first);
+    const isEmpty = (r) => [1, 2, 4, 8, 15].every((c) => txt(ws.getCell(r, c)).trim() === '');
+    let target = 0, dup = 0;
+    for (let r = first; r <= last; r++) {
+      if (isEmpty(r)) { if (!target) target = r; continue; }
+      target = 0;
+      if (norm(txt(ws.getCell(r, 1))) === norm(x.periodo) && norm(txt(ws.getCell(r, 2))) === norm(x.producto)
+        && norm(txt(ws.getCell(r, 3))) === norm(x.campana || 'General')) dup = r;
+    }
+    if (dup && onDuplicate === 'ask') return { dup };
+    if (dup && onDuplicate === 'overwrite') target = dup;
+    if (!target) target = last + 1;
+    const row = ws.getRow(target), tmpl = ws.getRow(first);
+    rowCells(a, x, target).forEach((v, i) => {
+      const cell = row.getCell(i + 1);
+      if (!Object.keys(cell.style || {}).length) cell.style = JSON.parse(JSON.stringify(tmpl.getCell(i + 1).style || {}));
+      cell.value = v;
+      if (i > 2) cell.numFmt = FMT[i];
+    });
+    row.commit();
+    wb.calcProperties = Object.assign({}, wb.calcProperties, { fullCalcOnLoad: true });
+    return { row: target, overwritten: target === dup };
+  }
+
+  // Libro nuevo con la misma estructura del consolidado.
+  function buildExport(ExcelJS, a, x) {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'P&L COD';
+    const ws = wb.addWorksheet('Registro', { views: [{ state: 'frozen', xSplit: 3, ySplit: 3 }] });
+    const band = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+    const thin = { style: 'thin', color: { argb: 'FFD1D5DB' } };
+    ws.getCell('A1').value = 'Utilidad Consolidado Global';
+    ws.getCell('A1').font = { bold: true, size: 14 };
+    [['A2:C2', 'GENERAL', 'FF374151'], ['D2:G2', 'PUBLICIDAD · Meta Ads', 'FF4338CA'], ['H2:N2', 'LOGÍSTICA COD · Dropi', 'FF0F766E'], ['O2:T2', 'FINANZAS REALES · P&L de bolsillo', 'FF166534']]
+      .forEach(([rng, label, color]) => {
+        ws.mergeCells(rng);
+        const c = ws.getCell(rng.split(':')[0]);
+        c.value = label; c.fill = band(color);
+        c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.alignment = { horizontal: 'center' };
+      });
+    HEADERS.forEach((h, i) => {
+      const c = ws.getRow(3).getCell(i + 1);
+      c.value = h; c.fill = band('FF111827'); c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      ws.getColumn(i + 1).width = i < 3 ? 22 : 16;
+    });
+    ws.getRow(3).height = 34;
+    rowCells(a, x, 4).forEach((v, i) => {
+      const c = ws.getRow(4).getCell(i + 1);
+      c.value = v; c.numFmt = FMT[i]; c.border = { top: thin, bottom: thin, left: thin, right: thin };
+    });
+    wb.calcProperties = { fullCalcOnLoad: true };
+    return wb;
+  }
+
+  return { norm, toISO, num, parseCSV, cellVal, isDropi, isMetrics, classify, buildDropi, buildMeta, buildMetrics, matchProduct, aggregate, products, periodLabel, rowCells, writeRegistro, buildExport, HEADERS };
+})();
+if (typeof module !== 'undefined') module.exports = ENGINE;
+// ===== ENGINE END =====
+</script>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const S = { dropi: null, meta: null, metaInfo: null, metrics: null, map: {}, handle: null, prod: '__all', current: null };
+  const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const nf = (v, o) => v.toLocaleString('es-CO', o);
+  const F = {
+    cop: (v) => COP.format(v),
+    pct: (v) => nf(v * 100, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%',
+    x: (v) => nf(v, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x',
+  };
+  const fmt = (v, k) => (v == null || !isFinite(v) ? '—' : F[k](v));
+  const short = (v) => {
+    const a = Math.abs(v), s = v < 0 ? '−' : '';
+    if (a >= 1e6) return s + '$' + nf(a / 1e6, { maximumFractionDigits: 2 }) + ' M';
+    if (a >= 1e3) return s + '$' + nf(Math.round(a / 1e3)) + ' mil';
+    return s + '$' + nf(Math.round(a));
+  };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  // ---------- Toast / modal ----------
+  let toastT;
+  function toast(msg, kind) {
+    const t = $('#toast');
+    t.textContent = msg; t.className = 'toast show ' + (kind || '');
+    clearTimeout(toastT); toastT = setTimeout(() => (t.className = 'toast'), 5000);
+  }
+  function askDuplicate(text) {
+    return new Promise((res) => {
+      const m = $('#modal');
+      $('#modal-p').textContent = text;
+      m.classList.add('show');
+      const on = (e) => {
+        const r = e.target.closest('[data-r]');
+        if (!r && e.target !== m) return;
+        m.classList.remove('show'); m.removeEventListener('click', on);
+        res(r ? r.dataset.r : 'cancel');
+      };
+      m.addEventListener('click', on);
+    });
+  }
+
+  // ---------- Lectura de archivos ----------
+  async function readRows(file) {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.xls')) throw new Error('Formato .xls antiguo no soportado. Exporta como .xlsx o .csv.');
+    if (name.endsWith('.xlsx')) {
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(await file.arrayBuffer());
+      const ws = wb.worksheets[0];
+      const out = [];
+      ws.eachRow({ includeEmpty: false }, (row) => {
+        const arr = [];
+        for (let c = 1; c <= ws.columnCount; c++) arr.push(ENGINE.cellVal(row.getCell(c)));
+        out.push(arr);
+      });
+      return out;
+    }
+    const buf = await file.arrayBuffer();
+    let text = new TextDecoder('utf-8').decode(buf);
+    if (text.includes('�')) text = new TextDecoder('windows-1252').decode(buf);
+    return ENGINE.parseCSV(text);
+  }
+
+  function setStatus(which, msg, state) {
+    const st = $('#st-' + which);
+    st.textContent = msg;
+    st.className = 'st ' + (state === 'err' ? 'bad' : state === 'done' ? 'ok' : 'muted');
+    $('#drop-' + which).classList.toggle('done', state === 'done');
+    $('#drop-' + which).classList.toggle('err', state === 'err');
+  }
+
+  // Asignación campaña → producto: automática por nombre, corregible en la tabla y recordada en el navegador.
+  const MAP_KEY = 'pyl-cod-campaign-map';
+  const loadSaved = () => { try { return JSON.parse(localStorage.getItem(MAP_KEY) || '{}'); } catch { return {}; } };
+  const saveSaved = (m) => { try { localStorage.setItem(MAP_KEY, JSON.stringify(m)); } catch { /* sin almacenamiento */ } };
+  function rebuildMap() {
+    if (!S.metrics) { S.map = {}; return; }
+    const prods = S.dropi ? ENGINE.products(S.dropi.lines) : [];
+    const saved = loadSaved();
+    S.map = {};
+    S.metrics.names.forEach((n) => {
+      const v = saved[n];
+      S.map[n] = v === '' ? null : v && prods.includes(v) ? v : ENGINE.matchProduct(n, prods);
+    });
+  }
+
+  // Cada archivo se identifica por su contenido, sin importar en qué zona se suelte.
+  const KIND_LABEL = { dropi: 'el reporte de órdenes de Dropi', meta: 'la facturación de Meta', metrics: 'el reporte de métricas de campañas' };
+  async function handleFiles(files, zone) {
+    for (const file of files) {
+      let rows;
+      try { rows = await readRows(file); } catch (e) { setStatus(zone, `${file.name}: ${e.message}`, 'err'); continue; }
+      const kind = ENGINE.isDropi(rows) ? 'dropi' : ENGINE.isMetrics(rows) ? 'metrics' : 'meta';
+      try {
+        if (kind === 'dropi') {
+          S.dropi = ENGINE.buildDropi(rows);
+          setStatus('dropi', `${file.name} · ${nf(S.dropi.orders)} órdenes, ${nf(S.dropi.lines.length)} líneas`, 'done');
+          resetFilters();
+        } else if (kind === 'metrics') {
+          S.metrics = ENGINE.buildMetrics(rows);
+          const sp = S.metrics.camps.reduce((s, c) => s + c.spend, 0);
+          setStatus('metrics', `${file.name} · ${nf(S.metrics.names.length)} campañas, ${F.cop(sp)} sin IVA`, 'done');
+          if (S.dropi) resetFilters(true);
+        } else {
+          const info = ENGINE.buildMeta(rows);
+          S.metaInfo = info; S.meta = info.rows;
+          const tot = S.meta.reduce((s, m) => s + m.amt, 0);
+          setStatus('meta', `${file.name} · ${nf(S.meta.length)} cargos, ${F.cop(tot)}`, 'done');
+          if (S.dropi) resetFilters(true);
+        }
+        if (zone !== kind) setStatus(zone, `${file.name} es ${KIND_LABEL[kind]}: lo cargué en su lugar.`, '');
+      } catch (e) { setStatus(kind, `${file.name}: ${e.message}`, 'err'); }
+    }
+    rebuildMap();
+    render();
+  }
+
+  ['dropi', 'meta', 'metrics'].forEach((z) => {
+    const drop = $('#drop-' + z), input = $('#file-' + z);
+    input.addEventListener('change', () => { if (input.files.length) handleFiles([...input.files], z); input.value = ''; });
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files.length) handleFiles([...e.dataTransfer.files], z); });
+  });
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => e.preventDefault());
+
+  // ---------- Filtros ----------
+  function dateBounds() {
+    const ds = S.dropi.lines.map((l) => l.date).filter(Boolean).sort();
+    const ms = (S.meta || []).map((m) => m.date).sort();
+    return { min: ds[0], max: [ds[ds.length - 1], ms[ms.length - 1], S.metrics?.to].filter(Boolean).sort().pop() };
+  }
+  function resetFilters(keepProd) {
+    const b = dateBounds();
+    $('#f-from').value = b.min || ''; $('#f-to').value = b.max || '';
+    if (!keepProd) S.prod = '__all';
+    const sel = $('#f-prod');
+    sel.textContent = '';
+    sel.appendChild(new Option('Todos / Consolidado', '__all'));
+    ENGINE.products(S.dropi.lines).forEach((p) => sel.appendChild(new Option(p, p)));
+    sel.value = [...sel.options].some((o) => o.value === S.prod) ? S.prod : '__all';
+    S.prod = sel.value;
+  }
+  const parseInput = (id, commaDecimal) => { const v = $(id).value.trim(); return v === '' ? null : ENGINE.num(v, commaDecimal); };
+  function filters() {
+    let from = $('#f-from').value || null, to = $('#f-to').value || null;
+    if (from && to && from > to) [from, to] = [to, from];
+    return { prod: S.prod, from, to, adsOverride: parseInput('#f-ads', false) };
+  }
+  $('#f-prod').addEventListener('change', (e) => { S.prod = e.target.value; render(); });
+  ['#f-from', '#f-to', '#f-ads', '#f-buys', '#f-ctr', '#f-camp'].forEach((id) => $(id).addEventListener('input', render));
+  $('#f-reset').addEventListener('click', () => { resetFilters(); $('#f-ads').value = ''; render(); });
+
+  function extras(f, a) {
+    const buysIn = parseInput('#f-buys', false), ctrIn = parseInput('#f-ctr', true);
+    return {
+      periodo: ENGINE.periodLabel(f.from, f.to),
+      producto: f.prod === '__all' ? 'Consolidado' : f.prod,
+      campana: $('#f-camp').value.trim() || a.campAuto || 'General',
+      compras: buysIn != null ? Math.round(buysIn) : a.buys,
+      ctr: ctrIn != null ? ctrIn / 100 : a.ctr != null ? a.ctr / 100 : null,
+    };
+  }
+
+  // ---------- Render ----------
+  function chip(id, cls, text) { const c = $(id); c.className = 'chip ' + (cls || ''); c.textContent = text || ''; }
+
+  const mx = () => (S.metrics ? { camps: S.metrics.camps, map: S.map } : null);
+
+  function render() {
+    if (!S.dropi) { renderNotices(null); $('#dash').classList.add('hidden'); return; }
+    $('#dash').classList.remove('hidden');
+    const f = filters();
+    const a = ENGINE.aggregate(S.dropi.lines, S.meta || [], f, mx());
+    const x = extras(f, a);
+    S.current = { a, x, f };
+    renderNotices(a);
+
+    $('#f-buys').placeholder = a.buys != null ? nf(a.buys) : '—';
+    $('#f-ctr').placeholder = a.ctr != null ? nf(a.ctr, { maximumFractionDigits: 2 }) : '—';
+    $('#f-ads').placeholder = 'Auto: ' + short(a.adsAuto);
+    $('#f-camp').placeholder = a.campAuto || 'General';
+
+    $('#title').textContent = `${x.producto} · ${x.periodo || 'Todo el periodo'}`;
+    const take = $('#take'); take.textContent = '';
+    const b = (t) => el('b', null, t);
+    take.append('Utilidad neta real de ', b(fmt(a.util, 'cop')), ' con margen de ', b(fmt(a.margen, 'pct')),
+      '. Fletes y Meta Ads se llevan ', b(fmt(a.pesoCostos, 'pct')), ' de lo cobrado. ROAS real ',
+      b(fmt(a.roas, 'x')), ' frente a un equilibrio de ', b(fmt(a.roasEq, 'x')), '.');
+
+    $('#k-util').textContent = fmt(a.util, 'cop');
+    $('#k-util').className = 'k-val ' + (a.util >= 0 ? '' : 'bad');
+    $('#k-util-f').textContent = `Wallet ${fmt(a.wallet, 'cop')} − Ads ${fmt(a.ads, 'cop')}`;
+    $('#k-margen').textContent = fmt(a.margen, 'pct');
+    $('#k-efect').textContent = fmt(a.efect, 'pct');
+    $('#k-efect-f').textContent = `${nf(a.ent)} entregados · ${nf(a.dev)} devueltos`;
+    $('#k-roas').textContent = fmt(a.roas, 'x');
+    $('#k-roas-eq').textContent = fmt(a.roasEq, 'x');
+    $('#k-cpa').textContent = fmt(a.cpa, 'cop');
+    $('#k-cpa-max').textContent = fmt(a.cpaMax, 'cop');
+
+    chip('#c-util', a.util > 0 ? 'ok' : 'bad', a.util > 0 ? 'Positiva' : 'Pérdida');
+    if (a.margen != null) chip('#c-margen', a.margen >= 0.2 ? 'ok' : a.margen >= 0 ? 'warn' : 'bad', a.margen >= 0.2 ? 'Sano (≥ 20%)' : a.margen >= 0 ? 'Bajo meta de 20%' : 'Negativo'); else chip('#c-margen');
+    if (a.efect != null) chip('#c-efect', a.efect >= 0.7 ? 'ok' : a.efect >= 0.6 ? 'warn' : 'bad', a.efect >= 0.7 ? 'Sobre meta de 70%' : 'Bajo meta de 70%'); else chip('#c-efect');
+    if (!a.ads) chip('#c-roas', 'warn', 'Sin gasto Ads cargado');
+    else if (a.roas != null && a.roasEq != null && a.roasEq > 0) {
+      const h = a.roas / a.roasEq - 1;
+      chip('#c-roas', h >= 0.15 ? 'ok' : h >= 0 ? 'warn' : 'bad', h >= 0.15 ? 'Con holgura' : h >= 0 ? 'En el límite' : 'Bajo equilibrio');
+    } else chip('#c-roas', 'bad', 'Wallet negativa');
+    if (a.cpa != null && a.cpaMax != null && a.cpaMax > 0 && a.ads) {
+      const h = 1 - a.cpa / a.cpaMax;
+      chip('#c-cpa', h >= 0.15 ? 'ok' : h >= 0 ? 'warn' : 'bad', h >= 0.15 ? 'Con holgura' : h >= 0 ? 'En el límite' : 'Sobre el máximo');
+    } else chip('#c-cpa');
+
+    drawCascade(a);
+    drawFunnel(a);
+    drawUnit(a);
+    drawProducts(f);
+    drawCampaigns(f);
+  }
+
+  function renderNotices(a) {
+    const box = $('#notices'); box.textContent = '';
+    const add = (t, k) => box.appendChild(el('div', 'notice ' + (k || ''), t));
+    if (typeof ExcelJS === 'undefined') add('No cargó la librería de Excel (¿sin internet?). Abre la app con conexión para leer .xlsx y guardar.', 'error');
+    if (!S.dropi || !a) return;
+    if (!S.meta && !S.metrics) add('Sin archivos de Meta: la inversión es $0 salvo que escribas la "Inversión Ads manual". Utilidad, ROAS y CPA quedan incompletos.');
+    else if (!S.meta) add('Sin facturación de Meta: la inversión sale del gasto de campañas, que no incluye el IVA de 19%. La utilidad queda sobrestimada.');
+    if (!S.metrics) add('Sin reporte de métricas: el gasto por producto se reparte según la facturación de sus pedidos. Compras Ads y CTR se escriben a mano.', 'info');
+    if (a.iva != null && a.mSpendAll) add(`Facturación ${F.cop(a.billTotal)} frente a gasto en campañas ${F.cop(a.mSpendAll)} (+${fmt(a.iva, 'pct')}: IVA 19% y ajustes). La utilidad usa la facturación.`, 'info');
+    if (a.mUnassigned > 0) add(`${F.cop(a.mUnassigned)} de gasto en campañas sin producto asignado: entra en el consolidado pero en ningún producto. Asígnalo en la tabla "Campañas Meta".`);
+    if (a.partial) add(`El reporte de métricas cubre ${ENGINE.periodLabel(S.metrics.from, S.metrics.to)} sin desglose diario. Para el rango filtrado, su gasto y compras se prorratean por días.`);
+    if (S.dropi.noDate) add(`${S.dropi.noDate} líneas de Dropi sin FECHA válida quedan fuera del cálculo.`);
+    if (S.metaInfo?.otherCur.length) add(`Meta trae divisas distintas a COP (${S.metaInfo.otherCur.join(', ')}). No se convierten.`, 'error');
+    if (S.metaInfo?.skipped) add(`${S.metaInfo.skipped} cobros de Meta fallidos o reembolsados se omitieron.`, 'info');
+    if (S.metaInfo?.prepaid) {
+      const m = S.metaInfo, tot = S.meta.reduce((s, r) => s + r.amt, 0);
+      const check = m.billed == null ? '' : Math.abs(m.billed - tot) < 1 ? ' Cuadra con el "Importe total facturado".' : ` Ojo: el "Importe total facturado" dice ${F.cop(m.billed)}.`;
+      add(`Meta: gasto real ${F.cop(tot)} en ${nf(S.meta.length)} cargos. Se excluyen ${nf(m.depositsN)} recargas de saldo con tarjeta (${F.cop(m.depositsTotal)}).${check}`, 'info');
+    }
+  }
+
+  // Cascada SVG
+  function drawCascade(a) {
+    const box = $('#cascade'); box.textContent = '';
+    const rows = [
+      ['Cobrado', 'Facturación cobrada', 'total', a.fact],
+      ['Mercancía', 'Costo de mercancía', 'cost', -a.merc],
+      ['Fletes', 'Fletes (entregas + devoluciones)', 'cost', -a.fletes],
+      ['Wallet', 'Ganancia wallet Dropi', 'total', a.wallet],
+      ['Ads', 'Inversión Meta Ads', 'cost', -a.ads],
+      ['Utilidad', 'Utilidad neta real', 'total', a.util],
+    ];
+    let run = 0;
+    const bars = rows.map(([s, l, t, v]) => {
+      let y0, y1;
+      if (t === 'total') { y0 = 0; y1 = v; run = v; } else { y0 = run; y1 = run + v; run = y1; }
+      return { s, l, t, v, y0, y1 };
+    });
+    const W = Math.max(box.clientWidth, 300), H = 300, m = { t: 28, r: 4, b: 30, l: 4 };
+    const lo = Math.min(0, ...bars.map((b) => Math.min(b.y0, b.y1)));
+    const hi = Math.max(1, ...bars.map((b) => Math.max(b.y0, b.y1))) * 1.1;
+    const y = (v) => m.t + ((hi - v) / (hi - lo)) * (H - m.t - m.b);
+    const step = (W - m.l - m.r) / bars.length, bw = step * 0.62;
+    const xb = (i) => m.l + i * step + (step - bw) / 2;
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('width', '100%'); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const mk = (tag, attrs, text) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text != null) n.textContent = text; svg.appendChild(n); return n; };
+    const raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+    const tick = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw) || mag;
+    for (let v = Math.ceil(lo / tick) * tick; v <= hi; v += tick) mk('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: Math.abs(v) < tick / 2 ? '#3a4458' : '#1c2331' });
+    bars.forEach((b, i) => {
+      if (i) mk('line', { x1: xb(i - 1) + bw, x2: xb(i), y1: y(bars[i - 1].y1), y2: y(bars[i - 1].y1), stroke: '#4a5470', 'stroke-dasharray': '3 3' });
+    });
+    const last = bars.length - 1;
+    bars.forEach((b, i) => {
+      const fill = b.t === 'cost' ? 'var(--cost)' : i === last ? (b.v >= 0 ? 'var(--ok)' : 'var(--bad)') : 'var(--accent)';
+      const top = y(Math.max(b.y0, b.y1));
+      const r = mk('rect', { x: xb(i), y: top, width: bw, height: Math.max(2, Math.abs(y(b.y0) - y(b.y1))), rx: 4, fill, 'fill-opacity': b.t === 'cost' ? 0.8 : 1 });
+      r.addEventListener('mousemove', (ev) => showTip(ev, [b.l, F.cop(b.v), a.fact ? fmt(b.v / a.fact, 'pct') + ' de lo cobrado' : '']));
+      r.addEventListener('mouseleave', hideTip);
+      mk('text', { x: xb(i) + bw / 2, y: top - 7, 'text-anchor': 'middle', fill: '#e7eaf0', 'font-size': 12, 'font-family': 'Inter, sans-serif' }, short(b.v));
+      mk('text', { x: xb(i) + bw / 2, y: H - 9, 'text-anchor': 'middle', fill: '#8a93a6', 'font-size': 12, 'font-family': 'Inter, sans-serif' }, b.s);
+    });
+    box.appendChild(svg);
+  }
+  function showTip(ev, lines) {
+    const t = $('#tip'); t.textContent = '';
+    lines.filter(Boolean).forEach((l, i) => t.appendChild(el('div', i === 1 ? '' : 't', l)));
+    t.style.display = 'block';
+    const tw = t.offsetWidth, th = t.offsetHeight;
+    t.style.left = Math.min(Math.max(8, ev.pageX - tw / 2), document.documentElement.clientWidth - tw - 8) + 'px';
+    t.style.top = ev.pageY - th - 14 + 'px';
+  }
+  function hideTip() { $('#tip').style.display = 'none'; }
+
+  function drawFunnel(a) {
+    const box = $('#funnel'); box.textContent = '';
+    const steps = [
+      ['Recibidos', a.rec, null, null],
+      ['Despachados', a.desp, a.can, 'cancelados en confirmación'],
+      ['Entregados', a.ent, a.desp - a.ent, 'devueltos o en ruta'],
+    ];
+    const max = Math.max(1, a.rec);
+    const worst = Math.max(a.can, a.desp - a.ent);
+    steps.forEach(([name, val, loss, why], i) => {
+      if (loss != null) {
+        const prev = steps[i - 1][1];
+        box.appendChild(el('div', 'f-loss' + (loss === worst && worst > 0 ? ' worst' : ''), `↓ −${nf(loss)} ${why}${prev ? ` (${fmt(loss / prev, 'pct')})` : ''}`));
+      }
+      const row = el('div', 'f-row');
+      const bar = el('div', 'f-bar'); bar.style.width = (val / max) * 100 + '%';
+      if (i === steps.length - 1) bar.style.background = 'var(--accent)';
+      const track = el('div'); track.appendChild(bar);
+      row.append(el('div', null, name), track, el('div', 'f-val', nf(val)));
+      box.appendChild(row);
+    });
+    const parts = [['Entregados', a.ent, 'var(--accent)'], ['Devueltos', a.dev, 'var(--cost)'], ['En ruta', a.ruta, '#56607a']];
+    const tot = parts.reduce((s, p) => s + p[1], 0) || 1;
+    const stack = $('#stack'), legend = $('#legend'); stack.textContent = ''; legend.textContent = '';
+    parts.forEach(([label, v, c]) => {
+      const seg = el('div'); seg.style.flex = String(v); seg.style.background = c;
+      seg.addEventListener('mousemove', (ev) => showTip(ev, [label, `${nf(v)} pedidos`, fmt(v / tot, 'pct') + ' de los no cancelados']));
+      seg.addEventListener('mouseleave', hideTip);
+      stack.appendChild(seg);
+      const it = el('span'); const sw = el('i'); sw.style.background = c;
+      it.append(sw, `${label} ${nf(v)} (${fmt(v / tot, 'pct')})`);
+      legend.appendChild(it);
+    });
+    const metaTxt = a.buys != null ? `Meta reportó ${nf(a.buys)} compras (CPA Meta ${fmt(a.cpaMeta, 'cop')} sin IVA); Dropi recibió ${nf(a.rec)} pedidos. ` : 'Pedidos únicos de Dropi en el filtro. ';
+    $('#funnel-note').textContent = metaTxt + (a.pen ? `"En ruta" incluye ${nf(a.pen)} pendientes de confirmación.` : '');
+  }
+
+  function drawUnit(a) {
+    const tb = $('#unit-table tbody'); tb.textContent = '';
+    if (!a.ent) { const tr = el('tr'); const td = el('td', 'muted', 'Sin pedidos entregados en este filtro.'); td.colSpan = 4; tr.appendChild(td); tb.appendChild(tr); return; }
+    const ticket = a.fact / a.ent;
+    [
+      ['Ticket promedio cobrado', a.fact, 'var(--accent)'],
+      ['Mercancía', a.merc, 'var(--cost)'],
+      ['Fletes de entregas', a.fEnt, 'var(--cost)'],
+      ['Fletes de devoluciones (ida + retorno)', a.fDevIda + a.fRet, 'var(--cost)'],
+      ['Meta Ads', a.ads, 'var(--cost)'],
+      ['Utilidad', a.util, a.util >= 0 ? 'var(--ok)' : 'var(--bad)'],
+    ].forEach(([name, total, c], i) => {
+      const per = total / a.ent, pct = ticket ? per / ticket : null;
+      const tr = el('tr', i === 5 ? 'total' : '');
+      const td2 = el('td');
+      const bar = el('span', 'cellbar'); bar.style.width = Math.max(2, Math.min(1, Math.abs(pct || 0)) * 80) + 'px'; bar.style.background = c;
+      td2.append(bar, fmt(pct, 'pct'));
+      tr.append(el('td', null, name), el('td', i === 5 ? (per >= 0 ? 'ok' : 'bad') : '', fmt(per, 'cop')), td2, el('td', 'muted', fmt(total, 'cop')));
+      tb.appendChild(tr);
+    });
+  }
+
+  function drawProducts(f) {
+    const tb = $('#prod-table tbody'); tb.textContent = '';
+    const rows = ENGINE.products(S.dropi.lines).map((p) => [p, p]);
+    rows.push(['Todos / Consolidado', '__all']);
+    const cls = (v, good, mid) => (v == null ? '' : v >= good ? 'ok' : v >= mid ? 'warn' : 'bad');
+    rows.forEach(([label, key], i) => {
+      const a = ENGINE.aggregate(S.dropi.lines, S.meta || [], { ...f, prod: key, adsOverride: null }, mx());
+      const util = a.wallet - a.adsAuto, margen = a.fact ? util / a.fact : null;
+      const tr = el('tr', (key === '__all' ? 'total ' : '') + (S.prod === key ? 'sel' : ''));
+      tr.append(
+        el('td', null, label), el('td', null, nf(a.rec)), el('td', null, nf(a.ent)), el('td', null, nf(a.dev)),
+        el('td', cls(a.efect, 0.7, 0.6), fmt(a.efect, 'pct')), el('td', null, fmt(a.fact, 'cop')),
+        el('td', 'muted', fmt(a.adsAuto, 'cop')), el('td', null, fmt(a.wallet, 'cop')),
+        el('td', util >= 0 ? 'ok' : 'bad', fmt(util, 'cop')), el('td', cls(margen, 0.2, 0), fmt(margen, 'pct')),
+      );
+      tr.addEventListener('click', () => { S.prod = key; $('#f-prod').value = key; render(); });
+      tb.appendChild(tr);
+    });
+  }
+
+  function drawCampaigns(f) {
+    const card = $('#camps-card');
+    card.classList.toggle('hidden', !S.metrics);
+    $('#prod-note').textContent = S.metrics
+      ? 'Clic en una fila para filtrar. El gasto facturado se reparte por producto según el gasto de sus campañas.'
+      : 'Clic en una fila para filtrar. El gasto de Meta se reparte según la facturación de pedidos recibidos de cada producto.';
+    if (!S.metrics) return;
+    const tb = $('#camp-table tbody'); tb.textContent = '';
+    const prods = ENGINE.products(S.dropi.lines);
+    S.metrics.names.forEach((name) => {
+      // Una campaña puede venir en varias filas (desglose diario): se agregan dentro del filtro.
+      const a = ENGINE.aggregate([], [], { ...f, prod: '__all' }, { camps: S.metrics.camps.filter((c) => c.name === name), map: {} });
+      const tr = el('tr', a.mSpendAll ? '' : 'off');
+      const sel = el('select');
+      sel.appendChild(new Option('— Sin asignar —', ''));
+      prods.forEach((p) => sel.appendChild(new Option(p, p)));
+      sel.value = S.map[name] || '';
+      sel.addEventListener('change', () => {
+        const saved = loadSaved(); saved[name] = sel.value; saveSaved(saved);
+        rebuildMap(); render();
+      });
+      const tdSel = el('td'); tdSel.appendChild(sel);
+      tr.append(el('td', null, name), tdSel, el('td', null, fmt(a.mSpendAll, 'cop')), el('td', null, a.buys == null ? '—' : nf(a.buys)),
+        el('td', null, fmt(a.cpaMeta, 'cop')), el('td', null, a.ctr == null ? '—' : nf(a.ctr, { maximumFractionDigits: 2 }) + '%'),
+        el('td', null, a.checkouts == null ? '—' : nf(a.checkouts)));
+      tb.appendChild(tr);
+    });
+  }
+
+  let rz;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => S.current && drawCascade(S.current.a), 120); });
+
+  // ---------- Guardar en el consolidado ----------
+  // El acceso al archivo se recuerda en IndexedDB; Chrome/Edge solo piden confirmar el permiso.
+  const idb = (() => {
+    const open = () => new Promise((res, rej) => {
+      const r = indexedDB.open('pyl-cod', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const tx = async (mode, fn) => {
+      try {
+        const db = await open();
+        return await new Promise((res) => { const t = db.transaction('kv', mode); const req = fn(t.objectStore('kv')); t.oncomplete = () => res(req && req.result); t.onerror = () => res(null); });
+      } catch { return null; }
+    };
+    return { get: (k) => tx('readonly', (s) => s.get(k)), set: (k, v) => tx('readwrite', (s) => s.put(v, k)) };
+  })();
+
+  const FS = 'showOpenFilePicker' in window;
+  async function pickHandle() {
+    const [h] = await window.showOpenFilePicker({
+      id: 'consolidado',
+      types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
+    });
+    S.handle = h; await idb.set('master', h); updateWho();
+    return h;
+  }
+  async function getHandle() {
+    S.handle = S.handle || (await idb.get('master'));
+    if (!S.handle) await pickHandle();
+    let perm = await S.handle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') perm = await S.handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') throw new Error('Sin permiso de escritura sobre el archivo.');
+    return S.handle;
+  }
+  async function updateWho() {
+    const h = S.handle || (FS ? await idb.get('master') : null);
+    const who = $('#save-who'); who.textContent = '';
+    if (h) who.append('Archivo vinculado: ', el('b', null, h.name), '. Ciérralo en Excel antes de guardar.');
+    else if (FS) who.append('Agrega la fila del filtro actual a ', el('b', null, 'Utilidad_Consolidado_Global.xlsx'), '. La primera vez te pide elegir el archivo.');
+    else who.append('Este navegador no escribe archivos locales: al guardar eliges el consolidado y se descarga una copia actualizada para reemplazarlo. Usa Chrome o Edge para guardar directo.');
+  }
+
+  function pickFileFallback() {
+    return new Promise((res) => {
+      const i = document.createElement('input'); i.type = 'file'; i.accept = '.xlsx';
+      i.onchange = () => res(i.files[0] || null); i.click();
+    });
+  }
+  function download(buf, name) {
+    const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
+  $('#btn-save').addEventListener('click', async () => {
+    if (!S.current) return;
+    const btn = $('#btn-save'); btn.disabled = true;
+    try {
+      const { a, x } = S.current;
+      let file, h;
+      if (FS) { h = await getHandle(); file = await h.getFile(); } else { file = await pickFileFallback(); if (!file) return; }
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(await file.arrayBuffer());
+      let res = ENGINE.writeRegistro(wb, a, x, 'ask');
+      if (res.dup) {
+        const choice = await askDuplicate(`Ya existe "${x.periodo} · ${x.producto} · ${x.campana}" en la fila ${res.dup}. ¿Qué hago?`);
+        if (choice === 'cancel') return;
+        res = ENGINE.writeRegistro(wb, a, x, choice);
+      }
+      const out = await wb.xlsx.writeBuffer();
+      if (FS) {
+        const w = await h.createWritable();
+        await w.write(out); await w.close();
+        toast(`${res.overwritten ? 'Sobrescrita' : 'Guardada'} la fila ${res.row} en ${h.name}`, 'ok');
+      } else {
+        download(out, file.name);
+        toast(`Descargado ${file.name} con la fila ${res.row}. Reemplaza el original.`, 'ok');
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      const blocked = e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || e.name === 'NotAllowedError' || /lock|in use|being used/i.test(e.message);
+      toast(blocked ? 'No pude escribir el archivo. ¿Está abierto en Excel? Ciérralo y vuelve a guardar.' : 'No se pudo guardar: ' + e.message, 'error');
+    } finally { btn.disabled = false; }
+  });
+
+  $('#btn-unlink').addEventListener('click', async () => {
+    try { await pickHandle(); toast('Archivo vinculado: ' + S.handle.name, 'ok'); } catch (e) { if (e.name !== 'AbortError') toast(e.message, 'error'); }
+  });
+
+  $('#btn-export').addEventListener('click', async () => {
+    if (!S.current) return;
+    const { a, x } = S.current;
+    const wb = ENGINE.buildExport(ExcelJS, a, x);
+    const safe = (s) => s.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_');
+    download(await wb.xlsx.writeBuffer(), `PyL_${safe(x.producto)}_${safe(x.periodo || 'periodo')}.xlsx`);
+  });
+
+  if (!FS) $('#btn-unlink').classList.add('hidden');
+  renderNotices(null);
+  updateWho();
+})();
+</script>
+</body>
+</html>
