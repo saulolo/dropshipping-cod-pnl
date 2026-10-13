@@ -150,6 +150,17 @@ tbody tr:last-child td { border-bottom: none; }
 #prod-table .sub { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--faint); }
 #prod-table .sub.ok { color: var(--ok); } #prod-table .sub.bad { color: var(--bad); }
 tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
+#unit-table tr.total td { background: rgba(122,115,255,.08); border-top-color: #3a3f78; border-bottom: 1px solid #3a3f78; }
+#unit-table tr.total td:first-child { border-left: 3px solid var(--accent); }
+.info { cursor: help; border-bottom: 1px dotted var(--faint); }
+.info .i { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 6px; border-radius: 50%; background: #232a45; color: var(--accent-2); font-size: 10px; font-weight: 600; vertical-align: 1px; }
+.tip.wide { white-space: normal; width: min(300px, calc(100vw - 16px)); padding: 10px 12px; line-height: 1.45; animation: tipIn .18s ease-out; }
+@keyframes tipIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.tip.wide p:last-child { margin-bottom: 0; }
+.tip.wide .h { color: var(--fg); font-weight: 600; margin-bottom: 4px; }
+.tip.wide p { margin: 0 0 6px; color: #c9cedb; }
+.tip.wide ul { margin: 0; padding-left: 16px; color: #c9cedb; }
+.tip.wide li + li { margin-top: 4px; }
 
 /* Notices / save */
 .notices { display: flex; flex-direction: column; gap: 6px; }
@@ -1282,7 +1293,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     box.appendChild(svg);
   }
   function showTip(ev, lines) {
-    const t = $('#tip'); t.textContent = '';
+    const t = $('#tip'); t.textContent = ''; t.className = 'tip';
     lines.filter(Boolean).forEach((l, i) => t.appendChild(el('div', i === 1 ? '' : 't', l)));
     t.style.display = 'block';
     const tw = t.offsetWidth, th = t.offsetHeight;
@@ -1404,21 +1415,59 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     if (!a.ent) { const tr = el('tr'); const td = el('td', 'muted', 'Sin pedidos entregados en este filtro.'); td.colSpan = 4; tr.appendChild(td); tb.appendChild(tr); return; }
     const ticket = a.fact / a.ent;
     [
-      ['Ticket promedio cobrado', a.fact, 'var(--accent)'],
-      ['Mercancía', a.merc, 'var(--cost)'],
-      ['Fletes de entregas', a.fEnt, 'var(--cost)'],
-      ['Fletes de devoluciones (ida + retorno)', a.fDevIda + a.fRet, 'var(--cost)'],
-      [`Meta Ads (${a.withIva ? 'con' : 'sin'} IVA)`, a.ads, 'var(--cost)'],
-      ['Utilidad', a.util, a.util >= 0 ? 'var(--ok)' : 'var(--bad)'],
-    ].forEach(([name, total, c], i) => {
+      ['Ticket promedio cobrado', a.fact, 'var(--accent)', '', UNIT_TIPS.ticket],
+      ['Mercancía', a.merc, 'var(--cost)', '', UNIT_TIPS.merc],
+      ['Fletes de entregas', a.fEnt, 'var(--cost)', '', UNIT_TIPS.fEnt],
+      ['Fletes de devoluciones (ida + retorno)', a.fDevIda + a.fRet, 'var(--cost)', '', UNIT_TIPS.fDev],
+      ['Margen Máximo para Publicidad (CPA Sostenible)', a.fact - a.merc - a.fEnt - a.fDevIda - a.fRet, 'var(--accent-2)', '', UNIT_TIPS.cpa],
+      [`Meta Ads (${a.withIva ? 'con' : 'sin'} IVA)`, a.ads, 'var(--cost)', '', UNIT_TIPS.ads],
+      ['Utilidad', a.util, a.util >= 0 ? 'var(--ok)' : 'var(--bad)', 'total', UNIT_TIPS.util],
+    ].forEach(([name, total, c, kind, tip]) => {
       const per = total / a.ent, pct = ticket ? per / ticket : null;
-      const tr = el('tr', i === 5 ? 'total' : '');
+      const tr = el('tr', kind || '');
       const td2 = el('td');
       const bar = el('span', 'cellbar'); bar.style.width = Math.max(2, Math.min(1, Math.abs(pct || 0)) * 80) + 'px'; bar.style.background = c;
       td2.append(bar, fmt(pct, 'pct'));
-      tr.append(el('td', null, name), el('td', i === 5 ? (per >= 0 ? 'ok' : 'bad') : '', fmt(per, 'cop')), td2, el('td', 'muted', fmt(total, 'cop')));
+      const td1 = el('td');
+      const lab = el('span', 'info', name); lab.tabIndex = 0;
+      lab.appendChild(el('span', 'i', 'i'));
+      lab.setAttribute('aria-label', `${name}. ${tip.p}`);
+      lab.addEventListener('mousemove', (ev) => showInfoTip(ev, tip));
+      lab.addEventListener('mouseleave', hideTip);
+      lab.addEventListener('blur', hideTip);
+      lab.addEventListener('focus', () => { const r = lab.getBoundingClientRect(); showInfoTip({ pageX: r.left + window.scrollX + r.width / 2, pageY: r.top + window.scrollY }, tip); });
+      td1.appendChild(lab);
+      tr.append(td1, el('td', kind === 'total' ? (per >= 0 ? 'ok' : 'bad') : '', fmt(per, 'cop')), td2, el('td', 'muted', fmt(total, 'cop')));
       tb.appendChild(tr);
     });
+  }
+  // Explicación de cada concepto. li: [antes, palabra resaltada, clase, después].
+  const UNIT_TIPS = {
+    ticket: { h: '💵 Ticket promedio cobrado', p: 'Valor promedio que te pagó cada cliente en efectivo al recibir (incluye compras de 1 unidad y combos).' },
+    merc: { h: '📦 Mercancía', p: 'Lo que le pagaste a la bodega o proveedor de Dropi por el producto (y obsequios) entregado.' },
+    fEnt: { h: '🚚 Fletes de entregas', p: 'Costo promedio de envío que cobró la transportadora por llevar el paquete al cliente que sí recibió.' },
+    fDev: { h: '⚠️ Fletes de devoluciones', p: 'Costo de los paquetes devueltos (ida + vuelta) repartido entre los entregados: cuánta ganancia le resta cada devolución a los que sí pagaron.' },
+    cpa: { h: '💡 Margen Máximo para Publicidad (CPA Sostenible)', p: 'Dinero limpio de cada venta para pagar anuncios tras cubrir producto y todos los fletes.',
+      li: [['Meta Ads por entrega MENOR a este valor: ', 'GANANCIA', 'ok', '.'], ['Si lo SUPERA: estás ', 'PERDIENDO', 'bad', ' dinero.']] },
+    ads: { h: '📢 Meta Ads', p: 'Inversión publicitaria real pagada a Meta para que un cliente efectivamente reciba y pague.' },
+    util: { h: '💰 Utilidad', p: 'Dinero líquido que te queda en el bolsillo por cada pedido entregado tras pagar producto, fletes, devoluciones y publicidad.' },
+  };
+  // Tooltip ancho con explicación: reutiliza #tip y la misma lógica de posición que showTip.
+  function showInfoTip(ev, tip) {
+    const t = $('#tip');
+    if (t.dataset.k !== tip.h || t.style.display !== 'block') {
+      t.textContent = ''; t.className = 'tip wide'; t.dataset.k = tip.h;
+      t.append(el('div', 'h', tip.h), el('p', null, tip.p));
+      if (tip.li) {
+        const ul = el('ul');
+        tip.li.forEach(([pre, word, cls, post]) => { const l = el('li', null, pre); l.append(el('b', cls, word), post); ul.appendChild(l); });
+        t.appendChild(ul);
+      }
+      t.style.display = 'block';
+    }
+    const tw = t.offsetWidth, th = t.offsetHeight;
+    t.style.left = Math.min(Math.max(8, ev.pageX - tw / 2), document.documentElement.clientWidth - tw - 8) + 'px';
+    t.style.top = ev.pageY - th - 14 + 'px';
   }
 
   function drawProducts(f) {
