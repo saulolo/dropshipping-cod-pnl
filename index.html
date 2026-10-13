@@ -113,6 +113,24 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(24px, 3.4vw, 
 .f-val { text-align: right; font-variant-numeric: tabular-nums; }
 .stack { display: flex; height: 14px; border-radius: 5px; overflow: hidden; margin-top: 18px; gap: 2px; background: var(--grid); }
 .stack div { transition: flex .3s; }
+.diag-btn { appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 16px; padding: 9px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; color: var(--accent-2); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; }
+.diag-btn:hover { border-color: #3a4560; color: var(--fg); }
+.diag-btn .car { margin-left: auto; transition: transform .25s; }
+.diag-btn[aria-expanded="true"] .car { transform: rotate(180deg); }
+.diag-panel { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s ease, opacity .3s ease; }
+.diag-panel.open { grid-template-rows: 1fr; opacity: 1; }
+.diag-panel > div { overflow: hidden; min-height: 0; }
+.diag-body { margin-top: 10px; padding: 14px; background: #0d121b; border: 1px solid var(--line); border-radius: 10px; }
+.diag-body table td { vertical-align: top; }
+.diag-body td.dx { white-space: normal; text-align: left; min-width: 14rem; font-size: 12px; color: #c9cedb; }
+.diag-body th.dx { text-align: left; }
+.diag-body td:first-child small { display: block; font-size: 11px; color: var(--faint); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--faint); }
+.dot.ok { background: var(--ok); box-shadow: 0 0 6px rgba(52,195,143,.5); }
+.dot.warn { background: var(--warn); box-shadow: 0 0 6px rgba(242,184,75,.5); }
+.dot.bad { background: var(--bad); box-shadow: 0 0 6px rgba(240,97,109,.5); }
+.diag-concl { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: rgba(122,115,255,.08); border-radius: 0 8px 8px 0; font-size: 13px; color: #d6daf0; }
+.diag-concl b { color: var(--fg); font-weight: 600; }
 
 /* Tables */
 .tablewrap { overflow-x: auto; }
@@ -275,6 +293,20 @@ tr.total td { font-weight: 600; border-top: 1px solid var(--line); }
         <p class="note" id="funnel-note">Pedidos únicos de Dropi en el filtro actual.</p>
         <div class="funnel" id="funnel"></div>
         <div class="stack" id="stack"></div>
+        <button type="button" class="diag-btn" id="diag-btn" aria-expanded="false" aria-controls="diag-panel">📊 Ver Diagnóstico vs. Benchmark NovaSociety <span class="car" aria-hidden="true">▾</span></button>
+        <div class="diag-panel" id="diag-panel">
+          <div>
+            <div class="diag-body">
+              <div class="tablewrap">
+                <table id="diag-table">
+                  <thead><tr><th>Métrica</th><th>Tu dato</th><th>Benchmark Nova</th><th class="dx">Diagnóstico</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <p class="diag-concl" id="diag-concl"></p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1175,6 +1207,7 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
 
     drawCascade(a);
     drawFunnel(a);
+    drawDiag(a, x);
     drawUnit(a);
     drawProducts(f);
     drawCampaigns(f);
@@ -1304,6 +1337,66 @@ if (typeof module !== 'undefined') module.exports = ENGINE;
     S.funnelMode = b.dataset.mode;
     $('#funnel-mode').querySelectorAll('[data-mode]').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
     drawFunnel(S.current.a);
+  });
+
+  // Diagnóstico frente a las reglas NovaSociety. "Despachados" aquí = entregados + devueltos (en ruta aún no cuenta).
+  function drawDiag(a, x) {
+    const tb = $('#diag-table tbody'); tb.textContent = '';
+    const cerr = a.ent + a.dev;
+    const canR = a.rec ? a.can / a.rec : null;
+    const entR = cerr ? a.ent / cerr : null;
+    const devR = cerr ? a.dev / cerr : null;
+    const globR = a.rec ? a.ent / a.rec : null;
+    const pts = (v) => nf(Math.abs(v) * 100, { maximumFractionDigits: 1 }) + ' pts';
+    const rows = [
+      ['Tasa de cancelación', 'Filtro en WhatsApp · cancelados / recibidos', canR, '~15% a 20%',
+        canR == null ? null
+          : canR > 0.3 ? ['bad', 'Alerta: fuga excesiva de clientes en WhatsApp.']
+          : canR > 0.25 ? ['warn', 'En el límite: sobre el rango ideal. Revisa el guion de confirmación.']
+          : canR >= 0.15 ? ['ok', 'Saludable: buen filtro preventivo de pedidos falsos/duplicados.']
+          : canR >= 0.1 ? ['warn', 'Ligeramente bajo el rango ideal: confirma con más rigor.']
+          : ['warn', 'Alerta: podrías estar despachando pedidos sin confirmar.']],
+      ['Efectividad de entrega', 'Entregados / (entregados + devueltos)', entR, '70% a 75%+',
+        entR == null ? null
+          : entR >= 0.7 ? ['ok', 'Excelente: transporte en rango saludable de la industria.']
+          : ['bad', 'Bajo: problemas de entrega con transportadoras o direcciones incompletas.']],
+      ['Tasa de devolución', 'Devueltos / (entregados + devueltos)', devR, 'Máximo 25%',
+        devR == null ? null
+          : devR <= 0.25 ? ['ok', 'En control.']
+          : ['warn', 'Alerta: fuga en fletes dobles. Revisa exclusión de zonas rojas.']],
+      ['Efectividad operativa global', 'Regla 20/20/60 · entregados / recibidos', globR, '~60% (Meta Reina)',
+        globR == null ? null
+          : globR >= 0.6 ? ['ok', `Meta Reina alcanzada: ${pts(globR - 0.6)} sobre el 60%.`]
+          : [globR >= 0.5 ? 'warn' : 'bad', `A ${pts(0.6 - globR)} de la Meta Reina del 60%.` + (a.ruta ? ` ${nf(a.ruta)} pedidos en ruta aún pueden sumar.` : '')]],
+    ];
+    rows.forEach(([name, desc, val, bench, dx]) => {
+      const tr = el('tr');
+      const c1 = el('td', null, name); c1.appendChild(el('small', null, desc));
+      const c2 = el('td'); const dot = el('span', 'dot ' + (dx ? dx[0] : '')); c2.append(dot, fmt(val, 'pct'));
+      const c4 = el('td', 'dx', dx ? dx[1] : 'Sin datos suficientes en este filtro.');
+      tr.append(c1, c2, el('td', 'muted', bench), c4);
+      tb.appendChild(tr);
+    });
+
+    const p = $('#diag-concl'); p.textContent = '';
+    const b = (t) => el('b', null, t);
+    if (entR == null) { p.textContent = 'Aún no hay pedidos entregados ni devueltos en este filtro para emitir un diagnóstico.'; return; }
+    const okE = entR >= 0.7, okD = devR <= 0.25;
+    p.append(x.producto === 'Consolidado' ? 'Tu operación consolidada ' : `Tu operación con ${x.producto} `,
+      okE ? 'superó' : 'quedó bajo', ' el benchmark de transportadora (', b(fmt(entR, 'pct')), ')',
+      okE === okD ? ' y ' : ', pero ',
+      okD ? 'las devoluciones están en control (' : 'las devoluciones (', b(fmt(devR, 'pct')),
+      okD ? ').' : ') absorbieron parte del margen neto.', ' ',
+      !okE || !okD ? 'Priorizar confirmación de dirección y exclusión de zonas rojas.'
+        : canR > 0.3 ? 'Priorizar recuperación de clientes en WhatsApp.'
+        : canR < 0.1 ? 'Reforzar la confirmación antes de despachar.'
+        : globR < 0.6 ? 'Cerrar los pedidos en ruta para acercarte a la Meta Reina del 60%.'
+        : 'Mantener el filtro actual: la operación está en rango Nova.');
+  }
+  $('#diag-btn').addEventListener('click', () => {
+    const btn = $('#diag-btn'), open = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', String(open));
+    $('#diag-panel').classList.toggle('open', open);
   });
 
   function drawUnit(a) {
