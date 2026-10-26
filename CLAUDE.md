@@ -2,7 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Tablero P&L contra entrega (COD) de NovaSociety: cruza el reporte de órdenes de Dropi (.xlsx/.csv) con la facturación y métricas de Meta Ads. Todo corre en el navegador; UI y textos en español (es-CO). Ver `README.md` para el mapa de capas completo.
+App de NovaSociety con dos partes en una sola página (`index.html`, pestañas en la barra superior):
+- **Entrenador de métricas** (Inicio, Costeo, Hard Metrics, Simulador, Escalera, Creativos): método de Juan Herrera. Fase 1: vive en `js/app/trainer.js`, copiado del prototipo `docs/referencia/novasociety-metricas-v2.html` sin cambios de lógica; también maneja la navegación entre pestañas. Fase 2 pendiente: separarlo en core/ui con tests.
+- **Tablero P&L** (pestaña `#v-pyl`): P&L contra entrega (COD); cruza el reporte de órdenes de Dropi (.xlsx/.csv) con la facturación y métricas de Meta Ads.
+
+Todo corre en el navegador; UI y textos en español (es-CO). Ver `README.md` para el mapa de capas completo.
 
 ## Ejecutar y probar
 
@@ -20,7 +24,9 @@ Tablero P&L contra entrega (COD) de NovaSociety: cruza el reporte de órdenes de
 - **Orden de `<script>` en `index.html` = orden de capas**: `core → services → ui → app`, y `app/main.js` siempre al final (ahí arranca la app). Un archivo nuevo va dentro de su capa, antes de quien lo usa.
 - Cada capa solo usa las anteriores. `core` no toca DOM. `ui` recibe datos y callbacks por parámetro y nunca modifica estado. Solo `app` muta `app.state` (`js/app/state.js`).
 - **Los diagnósticos/textos dinámicos devuelven datos, no HTML**: arreglos de segmentos donde un string es texto plano y `{ b: '...' }` va en negrita; `PYL.ui.dom.rich(node, segments)` los pinta. Las reglas de negocio con benchmarks viven en `core/diagnostics.js` (`funnel`, `cascade`, `story`, `verdict`).
-- Estilos solo en `css/base.css` (tokens, base, tarjetas, filtros), `css/components.css` y `css/report.css` (informe PDF, tema claro); nada de `<style>` embebido en `index.html`.
+- Estilos solo en `css/base.css` (sistema de diseño del entrenador: tokens, barra superior, tarjetas, botones, campos, tablas y módulos del entrenador; al final, alias de tokens del tablero como `--panel`, `--accent`, `--ok`), `css/components.css` (solo lo propio del tablero P&L, acotado a `#v-pyl` cuando choca con base) y `css/report.css` (informe PDF, tema claro); nada de `<style>` embebido en `index.html`.
+- IDs únicos en toda la página: el entrenador usa `#t-verdict` y `#c-cpa-esp` porque `#verdict` y `#c-cpa` son del tablero. `#toast` es compartido.
+- Al mostrar la pestaña del tablero, `trainer.js#go` dispara `resize` para que la cascada y la tendencia se midan con la tarjeta visible.
 - Los archivos del repo usan finales de línea LF.
 
 ## Flujo de render
