@@ -12,10 +12,10 @@
 
   // Explicación de cada tarjeta, enlazada por data-tip en index.html.
   const TIPS = {
-    util: { h: '💰 Utilidad neta real', p: 'El dinero líquido final que queda en tu bolsillo tras restar del recaudo en Dropi los costos de producto, fletes de entregas, fletes de devoluciones y toda la publicidad de Meta Ads.' },
+    util: { h: '💰 Utilidad neta real', p: 'El dinero líquido final que queda en mi bolsillo tras restar del recaudo en Dropi los costos de producto, fletes de entregas, fletes de devoluciones y toda la publicidad de Meta Ads.' },
     margen: { h: '📊 Margen neto real', p: 'Qué porcentaje de cada $100 pesos cobrados en efectivo se convirtió en ganancia limpia. Meta saludable en NovaSociety: 15% a 20%.' },
     efect: { h: '🚚 Efectividad de entrega', p: 'De los paquetes que salieron a carretera con guía y ya cerraron ciclo, qué porcentaje cobró la transportadora con éxito. Meta Nova: 70% a 75%+.' },
-    roas: { h: '📈 ROAS real (cobrado / ads)', p: 'Cuántos pesos en EFECTIVO cobrado te devolvió cada $1 peso invertido en anuncios. Si tu ROAS real es menor al "Equilibrio", estás perdiendo dinero.' },
+    roas: { h: '📈 ROAS real (cobrado / ads)', p: 'Cuántos pesos en EFECTIVO cobrado me devolvió cada $1 peso invertido en anuncios. Si mi ROAS real es menor al "Equilibrio", estoy perdiendo dinero.' },
     cpa: { h: '🎯 CPA real por entrega', p: 'Cuánto dinero en publicidad tuviste que gastar para lograr que 1 cliente reciba y pague en mano. Si supera el "Máximo sostenible", cada entrega pierde dinero.' },
   };
 
@@ -99,7 +99,7 @@
     const box = $('#proj');
     box.classList.toggle('hidden', !p);
     if (!p) return;
-    rich(box, ['🚚 ', { b: `${nf(p.ruta)} pedidos en ruta.` }, ' Si cierran con tu efectividad actual (', { b: fmt(p.efect, 'pct') },
+    rich(box, ['🚚 ', { b: `${nf(p.ruta)} pedidos en ruta.` }, ' Si cierran con mi efectividad actual (', { b: fmt(p.efect, 'pct') },
       ') serían ≈', { b: nf(Math.round(p.ent)) }, ' entregas más y la utilidad pasaría a ', { b: fmt(p.util, 'cop') },
       ` (${p.extra >= 0 ? '+' : ''}${short(p.extra)}). La pauta de esos pedidos ya está pagada.`]);
     box.className = 'proj ' + (p.util >= 0 ? 'ok' : 'bad');
@@ -127,7 +127,7 @@
     catch {
       const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
       const ok = document.execCommand('copy'); ta.remove();
-      if (!ok) { toast('No pude copiar el resumen. Tu navegador bloqueó el portapapeles.', 'error'); return; }
+      if (!ok) { toast('No pude copiar el resumen. El navegador bloqueó el portapapeles.', 'error'); return; }
     }
     toast('Resumen copiado: pégalo en WhatsApp o en un correo.', 'ok');
   }

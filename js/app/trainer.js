@@ -35,8 +35,9 @@ function countUp(el, to, prefix){
 }
 
 /* ===================== Estado global ===================== */
-var GENERIC = { name: "Genérico de Juan (sin costeo)", tope: 15000, escala: 12000, apaga: 20000, generic: true };
+var GENERIC = { name: "Genérico de NovaSociety (sin costeo)", tope: 15000, escala: 12000, apaga: 20000, generic: true };
 var S = store.get("ns_prod", GENERIC);
+if(S.generic){ S = GENERIC; } // un genérico guardado antes toma el nombre actual
 var PLAT = { meta: { name: "Meta Ads", cpm: 20000 }, tiktok: { name: "TikTok Ads", cpm: 6000 } };
 var ESCALERA = [100000,120000,144000,173000,207000,249000,299000,358000,430000,516000,619000,743000,892000,1070000,1280000];
 
@@ -49,7 +50,7 @@ function renderPill(){
 }
 function setProduct(p){
   S = p; store.set("ns_prod", S);
-  renderPill(); renderTable(); $("#s-tope").value = Math.round(S.tope); renderLevel(); runPanel(); wiz(0);
+  renderPill(); renderTable(); $("#s-tope").value = Math.round(S.tope); renderLevel(); runPanel(); wiz(0); chain(chainK);
 }
 
 /* ===================== Navegación ===================== */
@@ -65,14 +66,55 @@ $$("#tabs button").forEach(function(b){ b.addEventListener("click", function(){ 
 $$("[data-go]").forEach(function(b){ b.addEventListener("click", function(){ go(b.dataset.go); }); });
 
 /* ===================== Cadena (dashboard) ===================== */
+// Desplegable "¿Qué falla y cómo lo arreglo?": regla de NovaSociety arriba y, debajo, cómo la aterrizo
+// (causa · cómo lo noto · solución). Las soluciones de la tabla siempre caen dentro de la regla.
+function chainHelp(rule, rows, foot){
+  return "<details class='chain-help'><summary>¿Qué falla y cómo lo arreglo?</summary>" +
+    "<p><span class='tag tv'>Criterio NovaSociety</span> " + rule + "</p>" +
+    "<div class='chain-help-tbl'><table><thead><tr><th>Causa</th><th>Cómo lo noto</th><th>Solución</th></tr></thead><tbody>" +
+    rows.map(function(r){ return "<tr><td><b>" + r[0] + "</b></td><td>" + r[1] + "</td><td>" + r[2] + "</td></tr>"; }).join("") +
+    "</tbody></table></div>" + (foot ? "<p class='small'>" + foot + "</p>" : "") + "</details>";
+}
+// Resalta cifras (sobre todo plata) dentro de los textos de la cadena.
+function N(x){ return "<span class='num'>" + x + "</span>"; }
 var CHAIN = {
-  cpm: "<b>CPM · costo por mil impresiones.</b> Máximo sano: 20.000 en Meta, 6.000 en TikTok. Si sale caro, el creativo no engancha: creativos nuevos con el gancho en los primeros tres segundos.",
-  cpc: "<b>CPC · costo por clic.</b> Se lee solo con el CPM sano. Si con CPM sano el CPC sale caro, el producto no interesa: la gente no quiere ver más información ni comprarlo.",
-  cppi: "<b>CPPI · costo por pago iniciado.</b> Bueno por debajo de 4.000; flojo cerca de 5.000; por encima de 6.000 sin ventas, se apaga. CPPI bueno sin ventas = problema de página, oferta o formulario.",
-  cpa: "<b>CPA · costo por venta.</b> El número final. Su techo sale del costeo: escala por debajo del 80% del tope, sostiene hasta el tope, apaga por encima del 133%."
+  cpm: "<b>CPM · costo por mil impresiones.</b> Máximo sano: " + N("$20.000") + " en Meta, " + N("$6.000") + " en TikTok. Si sale caro, el creativo no engancha: creativos nuevos con el gancho en los primeros tres segundos." +
+    chainHelp("CPM caro = el creativo no engancha. La solución son creativos nuevos, con el gancho en los primeros tres segundos.", [
+      ["Gancho débil", "El CPM sale caro desde el primer día; la gente pasa de largo.", "Creativo nuevo que abra con el problema o el resultado en los primeros 3 s: movimiento y texto grande en pantalla."],
+      ["Creativo cansado", "Venía sano y el CPM sube día a día con el mismo anuncio.", "Lanzar el reemplazo que tengo en el pipeline de Creativos, con un gancho distinto."],
+      ["Contenido que la plataforma castiga", "CPM de 3 a 8 veces el máximo con promesas de \"milagro\", bata blanca o síntomas de enfermedad.", "Creativo nuevo sin promesas exageradas: mostrar el uso real del producto."],
+      ["No parece contenido nativo", "Video horizontal o con cara de comercial de TV.", "Creativo nuevo vertical 9:16, estilo de alguien usándolo, gancho en los primeros 3 s."]
+    ], "Mientras el CPM esté roto, no juzgo el CPC ni el CPPI: son consecuencia."),
+  cpc: "<b>CPC · costo por clic.</b> Se lee solo con el CPM sano. Si con CPM sano el CPC sale caro, el producto no interesa: la gente no quiere ver más información ni comprarlo. (Mi ideal: menos de " + N("$800") + " por clic en Meta y TikTok.)" +
+    chainHelp("CPM sano + CPC caro = el producto no interesa: la gente no quiere ver más información ni comprarlo.", [
+      ["El producto no genera deseo", "El anuncio se muestra barato (CPM sano), pero casi nadie hace clic.", "No es el creativo: otro video no lo arregla. Dejo que los cortes de " + N("20K") + " / " + N("30K") + " / " + N("40K") + " decidan y pruebo otro producto."],
+      ["Producto muy visto", "Lo mismo aparece en muchas tiendas y anuncios; la gente ya lo conoce.", "Igual: el producto no interesa. Paso a otro producto con menos competencia."]
+    ], "Primero confirmo que el CPM esté sano; si no, el problema es del creativo (paso 1)."),
+  cppi: "<b>CPPI · costo por pago iniciado (costo por checkout).</b> Bueno por debajo de " + N("$4.000") + "; flojo cerca de " + N("$5.000") + "; por encima de " + N("$6.000") + " sin ventas, se apaga. CPPI bueno sin ventas = problema de página, oferta o formulario." +
+    chainHelp("CPPI bueno y sin ventas = el problema está en la página, la oferta o el formulario. La solución es mejorar la confianza de la página, la oferta y el formulario, que no exista fricción.", [
+      ["Página lenta", "Tarda más de 3 s en abrir en el celular; muchas visitas se van sin bajar.", "Quitar fricción: comprimir imágenes y GIF, quitar apps pesadas de Shopify, video liviano."],
+      ["Página sin confianza", "Entran, miran y salen. No hay reseñas ni se ve el pago contra entrega.", "Más confianza: reseñas con fotos reales, sello \"Pagas al recibir\", garantía visible, WhatsApp de contacto."],
+      ["Oferta débil", "Llegan al formulario, pero la oferta no los convence de terminar.", "Refinar la oferta: combos 2×/3×, bono o regalo, envío gratis, garantía de devolución."],
+      ["Formulario con fricción", "Inician el pago pero no terminan.", "Simplificar el formulario (Releasit): pocos campos, botón claro, sin pasos extra ni costos sorpresa."]
+    ], "Con CPPI por encima de " + N("$6.000") + " sin ventas no se arregla: se apaga en el corte de " + N("30K") + "."),
+  // Función: las zonas cambian con el producto activo del costeo.
+  cpa: function(){
+    return "<b>CPA · costo por venta (métrica reina).</b> El número final. Su techo sale del costeo: escala por debajo del " + N("80%") + " del tope, sostiene hasta el tope, apaga por encima del " + N("133%") + ". " +
+      "Con " + S.name + ": escala por debajo de " + N(money(S.escala)) + ", tope " + N(money(S.tope)) + ", apaga por encima de " + N(money(S.apaga)) + "." +
+      chainHelp("Decide el CPA de los últimos 3 días, no un solo día; las ventas del día no pesan, pesa el CPA. Por debajo de la zona de escala se sube; hasta el tope se sostiene; por encima se baja; por encima de la zona de apagar es zona de apagar.", [
+        ["CPA en zona de escala", "CPA de la ventana por debajo de " + N(money(S.escala)) + ".", "Subo un escalón: " + N("+20%") + " de presupuesto. Uno a la vez."],
+        ["CPA entre escala y tope", "CPA de la ventana entre " + N(money(S.escala)) + " y " + N(money(S.tope)) + ".", "Sostengo el presupuesto."],
+        ["CPA sobre el tope", "CPA de la ventana por encima de " + N(money(S.tope)) + ".", "Bajo un escalón (" + N("−20%") + ") y recorro la cadena: CPM, CPC y CPPI, para ver qué eslabón se rompió."],
+        ["Un día malo después de días buenos", "Ayer salió más caro que los días anteriores, que venían bien.", "Hasta " + N("50%") + " más caro: sostengo, fue un día flojo. " + N("50%") + " o más: bajo un escalón."],
+        ["Dos días en zona de apagar", "Dos días seguidos con CPA por encima de " + N(money(S.apaga)) + ".", "Apago. Es regla dura."],
+        ["Día sin nada", "Cero ventas, cero pagos iniciados y " + N(money(2 * S.apaga)) + " gastados en el día.", "Apago. Es la única excepción que apaga por un solo día."]
+      ], "Nada se apaga por un solo día malo, salvo el día sin nada.");
+  }
 };
+var chainK = "cpm";
 function chain(k){
-  $("#chainInfo").innerHTML = CHAIN[k];
+  chainK = k;
+  $("#chainInfo").innerHTML = typeof CHAIN[k] === "function" ? CHAIN[k]() : CHAIN[k];
   $$(".funnel-node").forEach(function(n){
     var r = n.querySelector("rect");
     var on = n.dataset.k === k;
@@ -109,33 +151,33 @@ function costeo(){
       '<div class="kpi" style="--glow:rgba(34,197,94,.35)"><div class="l">Escala por debajo de</div><div class="v" id="k2" style="color:var(--g-ink)">0</div><div class="s">80% del tope</div></div>' +
       '<div class="kpi" style="--glow:rgba(234,179,8,.35)"><div class="l">Sostiene hasta</div><div class="v" id="k3" style="color:var(--y-ink)">0</div><div class="s">El tope</div></div>' +
       '<div class="kpi" style="--glow:rgba(239,68,68,.35)"><div class="l">Apaga por encima de</div><div class="v" id="k4" style="color:var(--r-ink)">0</div><div class="s">133% del tope</div></div>' +
-      '<div class="kpi" style="--glow:rgba(34,211,238,.35)"><div class="l">Ganancia por entregado</div><div class="v" id="k5">0</div><div class="s">Con el CPA que esperas</div></div>';
+      '<div class="kpi" style="--glow:rgba(34,211,238,.35)"><div class="l">Ganancia por entregado</div><div class="v" id="k5">0</div><div class="s">Con el CPA que espero</div></div>';
   }
   countUp($("#k1"), tope, "$"); countUp($("#k2"), esc, "$"); countUp($("#k3"), tope, "$"); countUp($("#k4"), apa, "$"); countUp($("#k5"), ganEnt, "$");
   $("#k5").style.color = ganEnt > 0 ? "var(--g-ink)" : "var(--r-ink)";
 
   if(tope <= 0){
     zone.innerHTML = "";
-    msg.innerHTML = '<div class="note nr"><b>No da:</b> pierdes plata aunque la publicidad fuera gratis. Sube el precio o consigue mejor costo de proveedor o flete.</div>';
+    msg.innerHTML = '<div class="note nr"><b>No da:</b> pierdo plata aunque la publicidad fuera gratis. Sube el precio o consigue mejor costo de proveedor o flete.</div>';
   } else {
     var max = apa * 1.25, pos = Math.max(1, Math.min(99, cpa / max * 100));
     zone.innerHTML =
       '<div class="zbar"><div class="zg" style="flex:' + esc + '">Escala</div><div class="zy" style="flex:' + (tope - esc) + '">Sostiene</div><div class="zo" style="flex:' + (apa - tope) + '">Baja</div><div class="zr" style="flex:' + (max - apa) + '">Apaga</div></div>' +
-      '<div class="zmark" style="left:' + pos + '%"><span>Tu CPA ' + money(cpa) + '</span></div>' +
+      '<div class="zmark" style="left:' + pos + '%"><span>Mi CPA ' + money(cpa) + '</span></div>' +
       '<div class="zlabels"><span>$0</span><span>' + money(esc) + '</span><span>' + money(tope) + '</span><span>' + money(apa) + '</span><span>+</span></div>';
     var pct = tope / P * 100;
     msg.innerHTML = (gan > 0
-      ? '<div class="note ng">Con un CPA de <b>' + money(cpa) + '</b> te quedan <b>' + money(gan) + '</b> por pedido que entra, o sea <b>' + money(ganEnt) + '</b> por pedido entregado.</div>'
-      : '<div class="note nr">Con un CPA de <b>' + money(cpa) + '</b> pierdes <b>' + money(-gan) + '</b> por cada pedido. Tu CPA tiene que bajar del tope.</div>') +
-      (pct < 25 ? '<div class="note ny mt-s">Tu CPA máximo es apenas el ' + pct.toFixed(0) + '% del precio: poco margen de error en pauta.</div>' : '');
+      ? '<div class="note ng">Con un CPA de <b>' + money(cpa) + '</b> me quedan <b>' + money(gan) + '</b> por pedido que entra, o sea <b>' + money(ganEnt) + '</b> por pedido entregado.</div>'
+      : '<div class="note nr">Con un CPA de <b>' + money(cpa) + '</b> pierdo <b>' + money(-gan) + '</b> por cada pedido. Mi CPA tiene que bajar del tope.</div>') +
+      (pct < 25 ? '<div class="note ny mt-s">Mi CPA máximo es apenas el ' + pct.toFixed(0) + '% del precio: poco margen de error en pauta.</div>' : '');
   }
 
   // Donut
   var parts = [
     { n: "Producto", v: prod, c: "#A78BFA" },
     { n: "Flete (incluye devoluciones)", v: flete, c: "#22D3EE" },
-    { n: "Publicidad (tu CPA)", v: Math.min(cpa, Math.max(0, ingreso - prod - flete)), c: "#EAB308" },
-    { n: "Tu ganancia", v: Math.max(0, gan), c: "#22C55E" }
+    { n: "Publicidad (mi CPA)", v: Math.min(cpa, Math.max(0, ingreso - prod - flete)), c: "#EAB308" },
+    { n: "Mi ganancia", v: Math.max(0, gan), c: "#22C55E" }
   ];
   var total = ingreso > 0 ? ingreso : 1, circ = 2 * Math.PI * 72, acc = 0, segs = "", leg = "";
   parts.forEach(function(p){
@@ -154,7 +196,7 @@ $("#c-apply").addEventListener("click", function(){
   if(lastCost && lastCost.tope > 0){ setProduct(lastCost); toast("Listo: " + lastCost.name + " es el producto activo en toda la app"); }
   else { toast("Con estos números no hay tope: revisa el costeo"); }
 });
-$("#c-generic").addEventListener("click", function(){ setProduct(GENERIC); toast("Volviste al genérico de Juan: 12.000 / 15.000 / 20.000"); });
+$("#c-generic").addEventListener("click", function(){ setProduct(GENERIC); toast("Volví al genérico de NovaSociety: 12.000 / 15.000 / 20.000"); });
 
 /* ===================== Módulo 1 · Tabla ===================== */
 var plat = "meta";
@@ -169,7 +211,7 @@ function rows(){
   return [
     { k: "ctr", name: "CTR", sub: "Clics ÷ impresiones", color: "var(--c-ink)", bg: "var(--c-bg)", src: "juan", noTest: true,
       meta: { bench: "No se mira" }, tiktok: { bench: "No se mira" }, idealTxt: "No aplica", limitTxt: "No aplica",
-      diag: "Juan no lo mira: no decide ni para apagar ni para escalar. Tus Gotas Focus tuvieron CTR de hasta 6,7% y cero ventas." },
+      diag: "NovaSociety no lo mira: no decide ni para apagar ni para escalar. Mis Gotas Focus tuvieron CTR de hasta 6,7% y cero ventas." },
     { k: "cpc", name: "CPC", sub: "Gasto ÷ clics en el enlace", color: "var(--v-ink)", bg: "var(--v-bg)", src: "juan", noTest: true,
       meta: { bench: "Sin número fijo" }, tiktok: { bench: "Sin número fijo" }, idealTxt: "Se lee con el CPM sano", limitTxt: "Sin número fijo",
       diag: "Segundo eslabón. CPM sano + CPC caro = el producto no interesa: la gente no quiere ver más información ni comprarlo. Otro video no lo arregla." },
@@ -212,9 +254,9 @@ function renderTable(){
       var x = rangeTxt(r, plat);
       idealCell = '<span class="v" style="color:' + (r.noTest ? "var(--muted)" : "var(--g-ink)") + '">' + x.ideal + '</span>' + (r.k === "cppi" ? '<div class="small">Flojo 4.000–6.000</div>' : "") + (r.k === "cpa" ? '<div class="small">Zona de escala</div>' : "");
       limitCell = '<span class="v" style="color:' + (r.noTest ? "var(--muted)" : "var(--r-ink)") + '">' + x.limit + '</span>' + (r.k === "cpa" ? '<div class="small">Tope · apaga &gt; ' + fmt(S.apaga) + '</div>' : "") + (r.k === "cppi" ? '<div class="small">Sin ventas a 30K, se apaga</div>' : "");
-      tester = r.noTest ? "" : '<div class="tester"><span class="light" id="lt-' + r.k + '"></span><input type="number" step="any" data-test="' + r.k + '" placeholder="Tu dato" aria-label="Prueba tu ' + r.name + '"></div><div class="diag-live" id="dl-' + r.k + '"></div>';
+      tester = r.noTest ? "" : '<div class="tester"><span class="light" id="lt-' + r.k + '"></span><input type="number" step="any" data-test="' + r.k + '" placeholder="Mi dato" aria-label="Prueba mi ' + r.name + '"></div><div class="diag-live" id="dl-' + r.k + '"></div>';
     }
-    var srcTag = r.noTest ? '<span class="tag tn">No decide sola</span>' : '<span class="tag tv">Criterio Juan</span>';
+    var srcTag = r.noTest ? '<span class="tag tn">No decide sola</span>' : '<span class="tag tv">Criterio NovaSociety</span>';
     html += '<tr>' +
       '<td><div class="met"><div class="ic" style="background:' + r.bg + ';color:' + r.color + '">' + ICON[r.k] + '</div><div><b>' + r.name + '</b><small>' + r.sub + '</small><div style="margin-top:6px">' + srcTag + '</div>' + tester + '</div></div></td>' +
       '<td class="c-tt"><span class="v">' + r.tiktok.bench + '</span></td>' +
@@ -274,7 +316,7 @@ function setLight(c){
 }
 var hist = store.get("ns_hist", []);
 function renderHist(){
-  if(!hist.length){ $("#hist").innerHTML = '<div class="small">Todavía no evalúas ningún conjunto.</div>'; return; }
+  if(!hist.length){ $("#hist").innerHTML = '<div class="small">Todavía no evalúo ningún conjunto.</div>'; return; }
   $("#hist").innerHTML = hist.map(function(h){
     var cls = h.c === "r" ? "tr" : h.c === "y" ? "ty" : h.c === "g" ? "tg" : "tb";
     return '<div class="hist-item"><span class="t">' + h.t + '</span><span>' + h.n + ' · ' + money(h.g) + ' · ' + h.pi + ' PI · ' + h.v + ' V</span><span class="d tag ' + cls + '">' + h.short + '</span></div>';
@@ -313,7 +355,7 @@ function evaluate(label){
     if(v === 0){ c = "r"; big = "🛑 APAGAR INMEDIATO"; short = "Apagar"; items.push("40.000 gastados sin ventas: se apaga aunque el CPPI (" + money(cppi) + ") se vea bien."); if(cppi <= 5000){ items.push("CPPI bueno sin ventas: el problema es página, oferta o formulario."); } }
     else if(v >= 2 && cpa <= tope){ c = "g"; big = "🚀 DEJA GASTAR EL DÍA · A ESCALAR"; short = "Escalar"; items.push(v + " ventas con CPA de " + money(cpa) + ", dentro del tope (" + money(tope) + ")."); items.push("Déjalo gastar el presupuesto completo del día. Ya no es testeo: pasa a la escalera (módulo 3)."); }
     else if(v >= 2){ c = "y"; big = "⚠️ CPA SOBRE EL TOPE"; short = "Sobre tope"; items.push(v + " ventas, pero CPA de " + money(cpa) + " por encima del tope (" + money(tope) + "). No cumple para dejarlo gastar el día."); }
-    else { c = "y"; big = "⚠️ CASO LÍMITE"; short = "Límite"; items.push("La regla pide 2 o más ventas. Con 1 venta tu CPA es " + money(cpa) + " contra un tope de " + money(tope) + ": compáralos y decide con cuidado."); }
+    else { c = "y"; big = "⚠️ CASO LÍMITE"; short = "Límite"; items.push("La regla pide 2 o más ventas. Con 1 venta mi CPA es " + money(cpa) + " contra un tope de " + money(tope) + ": compáralos y decide con cuidado."); }
   }
 
   var vc = $("#t-verdict"); vc.classList.remove("pop"); void vc.offsetWidth; vc.classList.add("pop");
@@ -374,13 +416,13 @@ function renderLevel(){
     '<h3 class="mt">Reglas de protección</h3>' +
     '<div class="req"><span class="n" style="background:var(--y-bg);color:var(--y-ink)">=</span><div>CPA de la ventana entre ' + money(S.escala) + ' y el tope (' + money(S.tope) + '): <b>se sostiene</b> en ' + money(b) + '.</div></div>' +
     '<div class="req"><span class="n" style="background:var(--o-bg);color:var(--o-ink)">↓</span><div>CPA de la ventana por encima del tope: <b>se baja un escalón</b>' + (prev ? ', a ' + money(prev) : '') + '.</div></div>' +
-    '<div class="req"><span class="n" style="background:var(--y-bg);color:var(--y-ink)">~</span><div>Venían bien y ayer fue <b>hasta 50% más caro</b>: se sostiene, fue un día flojo. <b>50% o más caro</b>: se devuelve el 20%' + (prev ? ' (vuelves a ' + money(prev) + ')' : '') + '.</div></div>' +
+    '<div class="req"><span class="n" style="background:var(--y-bg);color:var(--y-ink)">~</span><div>Venían bien y ayer fue <b>hasta 50% más caro</b>: se sostiene, fue un día flojo. <b>50% o más caro</b>: se devuelve el 20%' + (prev ? ' (vuelvo a ' + money(prev) + ')' : '') + '.</div></div>' +
     '<div class="req"><span class="n" style="background:var(--r-bg);color:var(--r-ink)">!</span><div><b>Regla dura:</b> dos días seguidos por encima de la zona de apagar (' + money(S.apaga) + '): se apaga.</div></div>' +
     '<div class="req"><span class="n" style="background:var(--r-bg);color:var(--r-ink)">0</span><div><b>Única excepción de un día:</b> cero ventas, cero pagos iniciados y ' + money(2 * S.apaga) + ' gastados (el doble de la zona de apagar): se apaga.</div></div>' +
     '<button class="btn ghost sm mt" id="useLv">Usar este escalón en el panel</button>';
   $("#useLv").addEventListener("click", function(){ $("#l-nivel").value = i; runPanel(); toast("Escalón " + (i + 1) + " cargado en el panel"); });
   $$("#ladder .step").forEach(function(x){ x.setAttribute("aria-pressed", parseInt(x.dataset.i, 10) === i); });
-  $("#escNote").innerHTML = '<b>Zonas en uso: ' + S.name + '.</b> Escala por debajo de ' + money(S.escala) + ' · sostiene hasta ' + money(S.tope) + ' · apaga por encima de ' + money(S.apaga) + '. ' + (S.generic ? 'Son los números genéricos de Juan; costea tu producto en la pestaña Costeo para usar los tuyos.' : 'Salen del costeo de tu producto.');
+  $("#escNote").innerHTML = '<b>Zonas en uso: ' + S.name + '.</b> Escala por debajo de ' + money(S.escala) + ' · sostiene hasta ' + money(S.tope) + ' · apaga por encima de ' + money(S.apaga) + '. ' + (S.generic ? 'Son los números genéricos de NovaSociety; costea mi producto en la pestaña Costeo para usar los míos.' : 'Salen del costeo de mi producto.');
 }
 function runPanel(){
   var lv = parseInt($("#l-nivel").value || "0", 10);
@@ -405,7 +447,7 @@ function runPanel(){
   } else if(cpaWin <= S.tope){
     cls = "ny"; txt = "= <b>SOSTÉN " + money(cur) + ".</b> CPA de la ventana " + money(cpaWin) + ", entre la zona de escala y el tope (" + money(S.tope) + ").";
   } else if(cpaWin <= S.apaga){
-    cls = "ny"; txt = "↓ <b>BAJA UN ESCALÓN" + (down ? " a " + money(down) : " (ya estás en el escalón base)") + ".</b> CPA de la ventana " + money(cpaWin) + ", por encima del tope (" + money(S.tope) + ").";
+    cls = "ny"; txt = "↓ <b>BAJA UN ESCALÓN" + (down ? " a " + money(down) : " (ya estoy en el escalón base)") + ".</b> CPA de la ventana " + money(cpaWin) + ", por encima del tope (" + money(S.tope) + ").";
   } else {
     cls = "nr"; txt = "⚠️ <b>ZONA DE APAGAR.</b> CPA de la ventana " + money(cpaWin) + ". Nada se apaga por un solo día: baja un escalón" + (down ? " (" + money(down) + ")" : "") + " y si mañana vuelve a quedar en zona de apagar, son dos días seguidos y se apaga.";
   }
@@ -477,7 +519,7 @@ function renderKanban(){
       var c = cards.filter(function(x){ return x.id === +b.dataset.id; })[0];
       var idx = STAGES.map(function(s){ return s.k; }).indexOf(c.s), ni = idx + parseInt(b.dataset.mv, 10);
       c.s = STAGES[ni].k; c.d = Date.now();
-      if(c.s === "test" && parseInt(b.dataset.mv, 10) === 1){ bumpWeek(1); toast("A testeo: +1 para tu meta semanal"); }
+      if(c.s === "test" && parseInt(b.dataset.mv, 10) === 1){ bumpWeek(1); toast("A testeo: +1 para mi meta semanal"); }
       if(c.s === "win"){ toast("Ganador. Empieza ya a preparar su reemplazo"); }
       saveCards(); renderKanban();
     });
@@ -499,7 +541,7 @@ function renderRing(){
   $("#ringProg").setAttribute("stroke", n >= 4 ? "#22C55E" : n >= 2 ? "#EAB308" : "#EF4444");
   $("#ringNum").textContent = n;
   $("#weekLbl").textContent = "Semana " + WK.split("-S")[1];
-  $("#ringMsg").textContent = n >= 4 ? "Cadencia al día: tienes reemplazo si el CPM se dispara." : n >= 2 ? "Vas a medias: te faltan " + (4 - n) + "–" + (5 - n) + " anuncios para tu meta." : "Sin reemplazo: si el CPM de tu ganador se dispara, no tienes creativo nuevo listo.";
+  $("#ringMsg").textContent = n >= 4 ? "Cadencia al día: tengo reemplazo si el CPM se dispara." : n >= 2 ? "Voy a medias: me faltan " + (4 - n) + "–" + (5 - n) + " anuncios para mi meta." : "Sin reemplazo: si el CPM de mi ganador se dispara, no tengo creativo nuevo listo.";
 }
 $("#r-plus").addEventListener("click", function(){ bumpWeek(1); });
 $("#r-minus").addEventListener("click", function(){ bumpWeek(-1); });

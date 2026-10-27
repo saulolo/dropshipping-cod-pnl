@@ -13,8 +13,8 @@
     const h = await consolidado.linked();
     const who = $('#save-who'); who.textContent = '';
     if (h) who.append('Archivo vinculado: ', el('b', null, h.name), '. Ciérralo en Excel antes de guardar.');
-    else if (consolidado.supported) who.append('Agrega la fila del filtro actual a ', el('b', null, 'Utilidad_Consolidado_Global.xlsx'), '. La primera vez te pide elegir el archivo.');
-    else who.append('Este navegador no escribe archivos locales: al guardar eliges el consolidado y se descarga una copia actualizada para reemplazarlo. Usa Chrome o Edge para guardar directo.');
+    else if (consolidado.supported) who.append('Agrega la fila del filtro actual a ', el('b', null, 'Utilidad_Consolidado_Global.xlsx'), '. La primera vez me pide elegir el archivo.');
+    else who.append('Este navegador no escribe archivos locales: al guardar elijo el consolidado y se descarga una copia actualizada para reemplazarlo. Usa Chrome o Edge para guardar directo.');
   }
 
   // Elegir uno existente o crear uno nuevo; null si el usuario cancela.
