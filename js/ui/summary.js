@@ -123,12 +123,7 @@
 
   async function copyStory() {
     const text = shareText();
-    try { await navigator.clipboard.writeText(text); }
-    catch {
-      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
-      const ok = document.execCommand('copy'); ta.remove();
-      if (!ok) { toast('No pude copiar el resumen. El navegador bloqueó el portapapeles.', 'error'); return; }
-    }
+    if (!(await PYL.ui.dom.copy(text))) { toast('No pude copiar el resumen. El navegador bloqueó el portapapeles.', 'error'); return; }
     toast('Resumen copiado: pégalo en WhatsApp o en un correo.', 'ok');
   }
 

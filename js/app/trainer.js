@@ -129,14 +129,60 @@ $$(".funnel-node").forEach(function(n){
 chain("cpm");
 
 /* ===================== Costeo ===================== */
+// Campos con barra (.cs): el número se escribe con puntos de miles (es-CO) y la barra lo sigue.
+var cnum = function(id){ var v = parseFloat(String($("#" + id).value).replace(/[^\d,]/g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
+function csSync(box, fromRange){
+  var r = box.querySelector("input[type=range]"), t = box.querySelector(".cs-val input");
+  if(fromRange){ t.value = fmt(+r.value); }
+  else {
+    var v = cnum(t.id);
+    if(v > +r.max){ r.max = v; } // si escribo más que el tope de la barra, la barra se estira
+    r.value = v;
+  }
+  r.style.setProperty("--p", ((r.value - r.min) / (r.max - r.min) * 100) + "%");
+}
+$$("#v-costeo .cs").forEach(function(box){
+  var r = box.querySelector("input[type=range]"), t = box.querySelector(".cs-val input");
+  csSync(box, false); t.value = fmt(cnum(t.id));
+  r.addEventListener("input", function(){ csSync(box, true); costeo(); });
+  t.addEventListener("input", function(){ csSync(box, false); });
+  t.addEventListener("change", function(){ t.value = fmt(cnum(t.id)); });
+});
+
+// ¿A cuánto lo vendo? (columna derecha): el precio sale del margen que quiero con core/search.js#priceFor
+// (mismo cálculo y redondeo de NovaSociety), más el CPA máximo (con la zona de mi CPA) y lo que me queda por pedido entregado.
+var lastPrice = null;
+function costSide(o){
+  lastPrice = o ? o.P : null;
+  $("#c-to-cand").disabled = !o;
+  $("#c-r1").textContent = o ? money(o.P) : "—";
+  $("#c-r1-s").textContent = o ? "para ganar el " + fmt(o.mar) + "% por pedido" : "";
+  var ok = o && o.tope > 0, z = !ok ? "" : o.cpa < o.esc ? "g" : o.cpa <= o.tope ? "y" : "r";
+  var zt = { g: "en zona de escala", y: "dentro del tope", r: "por encima del tope" };
+  $("#c-r2").textContent = ok ? money(o.tope) : "—";
+  $("#c-r2-dot").className = "cres-dot " + z;
+  $("#c-r2-s").textContent = ok ? "con " + money(o.cpa) + " de CPA voy " + zt[z] : "con este precio no hay tope";
+  $("#c-r3").textContent = o ? money(o.ganEnt) : "—";
+  $("#c-r3").style.color = o && o.ganEnt < 0 ? "var(--r-ink)" : "";
+  $("#c-r3-s").textContent = o ? Math.round(o.e * 100) + " de cada 100 pedidos pagan · margen real " + (o.P > 0 ? Math.round(o.ganEnt / o.P * 100) : 0) + "%" : "";
+}
+
 var lastCost = null;
 function costeo(){
-  var P = val("c-precio"), C = val("c-prov"), F = val("c-flete"), cpa = val("c-cpa-esp");
-  var e = val("c-ef") / 100, d = val("c-desp") / 100;
+  var C = cnum("c-prov"), F = cnum("c-flete"), cpa = cnum("c-cpa-esp");
+  var dev = cnum("c-dev"), canc = cnum("c-canc"), mar = cnum("c-margen");
+  var e = (100 - dev - canc) / 100, d = (100 - dev) / 100;
   var kp = $("#c-kpis"), zone = $("#c-zone"), msg = $("#c-msg");
-  if(e <= 0 || d <= 0 || e > d){
-    kp.innerHTML = ""; zone.innerHTML = "";
-    msg.innerHTML = '<div class="note nr">La entrega efectiva tiene que ser mayor que 0 y no puede superar la entrega sobre despachado.</div>';
+  resetState();
+  if(e <= 0){
+    kp.innerHTML = ""; zone.innerHTML = ""; costSide(null); costPie(null);
+    msg.innerHTML = '<div class="note nr">Devoluciones y cancelaciones juntas tienen que sumar menos de 100%.</div>';
+    lastCost = null; return;
+  }
+  var P = PYL.core.search.priceFor({ price: C, flete: F, cpa: cpa, devRate: dev, cancelRate: canc }, mar);
+  if(P == null){
+    kp.innerHTML = ""; zone.innerHTML = ""; costSide(null); costPie(null);
+    msg.innerHTML = '<div class="note nr">El margen que quiero tiene que ser menor que 100%.</div>';
     lastCost = null; return;
   }
   var ingreso = e * P, prod = e * C, flete = (e / d) * F;
@@ -144,10 +190,11 @@ function costeo(){
   var esc = tope * 0.8, apa = tope * 4 / 3;
   var gan = tope - cpa, ganEnt = gan / e;
   lastCost = { name: $("#c-name").value.trim() || "Mi producto", tope: tope, escala: esc, apaga: apa };
+  costSide({ P: P, mar: mar, tope: tope, esc: esc, cpa: cpa, ganEnt: ganEnt, e: e });
 
   if(!kp.children.length){
     kp.innerHTML =
-      '<div class="kpi" style="--glow:rgba(99,120,255,.35)"><div class="l">CPA máximo</div><div class="v" id="k1">0</div><div class="s">Punto de equilibrio por pedido</div></div>' +
+      '<div class="kpi" style="--glow:rgba(var(--b-rgb),.35)"><div class="l">CPA máximo</div><div class="v" id="k1">0</div><div class="s">Punto de equilibrio por pedido</div></div>' +
       '<div class="kpi" style="--glow:rgba(34,197,94,.35)"><div class="l">Escala por debajo de</div><div class="v" id="k2" style="color:var(--g-ink)">0</div><div class="s">80% del tope</div></div>' +
       '<div class="kpi" style="--glow:rgba(234,179,8,.35)"><div class="l">Sostiene hasta</div><div class="v" id="k3" style="color:var(--y-ink)">0</div><div class="s">El tope</div></div>' +
       '<div class="kpi" style="--glow:rgba(239,68,68,.35)"><div class="l">Apaga por encima de</div><div class="v" id="k4" style="color:var(--r-ink)">0</div><div class="s">133% del tope</div></div>' +
@@ -167,30 +214,99 @@ function costeo(){
       '<div class="zlabels"><span>$0</span><span>' + money(esc) + '</span><span>' + money(tope) + '</span><span>' + money(apa) + '</span><span>+</span></div>';
     var pct = tope / P * 100;
     msg.innerHTML = (gan > 0
-      ? '<div class="note ng">Con un CPA de <b>' + money(cpa) + '</b> me quedan <b>' + money(gan) + '</b> por pedido que entra, o sea <b>' + money(ganEnt) + '</b> por pedido entregado.</div>'
+      ? '<div class="note ng">Con un CPA de <b>' + money(cpa) + '</b> me quedan <b>' + money(gan) + '</b> por pedido que entra, o sea <b>' + money(ganEnt) + '</b> por pedido entregado (' + (P > 0 ? Math.round(ganEnt / P * 100) : 0) + '% del precio).</div>'
       : '<div class="note nr">Con un CPA de <b>' + money(cpa) + '</b> pierdo <b>' + money(-gan) + '</b> por cada pedido. Mi CPA tiene que bajar del tope.</div>') +
       (pct < 25 ? '<div class="note ny mt-s">Mi CPA máximo es apenas el ' + pct.toFixed(0) + '% del precio: poco margen de error en pauta.</div>' : '');
   }
 
-  // Donut
-  var parts = [
-    { n: "Producto", v: prod, c: "#A78BFA" },
-    { n: "Flete (incluye devoluciones)", v: flete, c: "#22D3EE" },
-    { n: "Publicidad (mi CPA)", v: Math.min(cpa, Math.max(0, ingreso - prod - flete)), c: "#EAB308" },
-    { n: "Mi ganancia", v: Math.max(0, gan), c: "#22C55E" }
-  ];
-  var total = ingreso > 0 ? ingreso : 1, circ = 2 * Math.PI * 72, acc = 0, segs = "", leg = "";
-  parts.forEach(function(p){
-    var len = Math.max(0, p.v / total * circ);
-    segs += '<circle class="donut-seg" cx="95" cy="95" r="72" fill="none" stroke="' + p.c + '" stroke-width="24" stroke-dasharray="' + len + ' ' + (circ - len) + '" stroke-dashoffset="' + (-acc) + '"/>';
-    acc += len;
-    leg += '<div><i style="background:' + p.c + '"></i>' + p.n + '<b>' + money(p.v) + '</b></div>';
-  });
-  if(gan < 0){ leg += '<div style="color:var(--r-ink)"><i style="background:var(--r)"></i>Pérdida por pedido<b>' + money(gan) + '</b></div>'; }
-  $("#donutSegs").innerHTML = segs; $("#donutLeg").innerHTML = leg;
-  $("#donutTotal").textContent = money(ingreso);
+  var u = PYL.core.search.unitCost({ price: C, sellPrice: P, flete: F, cpa: cpa, devRate: dev, cancelRate: canc });
+  costPie(u);
+  costSteps({ u: u, F: F, cpa: cpa, dev: dev, canc: canc, mar: mar, tope: tope, esc: esc, apa: apa });
 }
-["c-name","c-precio","c-prov","c-flete","c-cpa-esp","c-ef","c-desp"].forEach(function(id){ $("#" + id).addEventListener("input", costeo); });
+// "¿Cómo se calcula?": llena los pasos con los números del costeo en vivo (los mismos de core.search, validados con NovaSociety).
+function costSteps(o){
+  var u = o.u, pct = function(x){ return Math.round(x * 100) + "%"; };
+  var v = {
+    canc: fmt(o.canc), dev: fmt(o.dev), ef: fmt(100 - o.dev - o.canc), desp: pct(u.entDesp),
+    prov: money(u.costo), fleteF: "(" + money(o.F) + " ÷ " + pct(u.entDesp) + ")", fleteC: money(u.fleteC),
+    cpaF: "(CPA " + money(o.cpa) + " ÷ " + pct(u.entEfec) + ")", cpaC: money(u.cpaC), costoT: money(u.costoT),
+    costoT2: money(u.costoT), mar: fmt(o.mar) + "%", raw: money(u.costoT / (1 - o.mar / 100)), precio: money(u.venta),
+    marReal: pct(u.utilidad / u.venta),
+    precio2: money(u.venta), prov2: money(u.costo), fleteC2: money(u.fleteC), ef2: pct(u.entEfec), tope: money(o.tope),
+    esc: money(o.esc), tope2: money(o.tope), apa: money(o.apa)
+  };
+  $$("#v-costeo [data-cx]").forEach(function(n){ n.textContent = v[n.dataset.cx]; });
+}
+// Dona "¿Qué me queda de cada pedido entregado?": el precio repartido en proveedor, flete costeado, publicidad
+// costeada y lo que me queda (core.search.unitCost, los montos de NovaSociety). Los segmentos se crean una vez
+// y solo cambia su largo, para que la dona se mueva al mover los campos. Si pierdo, la dona reparte los costos.
+// Colores: "Me queda" en el acento del tema; los costos en tres grises del mismo tema (más claro = primero en la leyenda).
+var PIE = [
+  { k: "net", c: "var(--b)" },
+  { k: "costo", c: "color-mix(in srgb, var(--ink) 62%, var(--card))" },
+  { k: "fleteC", c: "color-mix(in srgb, var(--ink) 42%, var(--card))" },
+  { k: "cpaC", c: "color-mix(in srgb, var(--ink) 25%, var(--card))" }
+];
+function costPie(u){
+  var segs = $("#c-pie-segs"), leg = $("#c-pie-leg"), wrap = $("#v-costeo .cpie");
+  var pct = function(x){ return Math.round(x * 100) + "%"; };
+  if(!u){ segs.innerHTML = ""; leg.innerHTML = ""; $("#c-pie-v").textContent = "—"; $("#c-pie-s").textContent = ""; return; }
+  var loss = u.utilidad < 0, info = {
+    net: { n: loss ? "Pierdo" : "Me queda", s: "margen real " + (u.venta ? pct(u.utilidad / u.venta) : "—"), v: u.utilidad },
+    costo: { n: "Proveedor", s: "costo del producto", v: u.costo },
+    fleteC: { n: "Flete", s: money(cnum("c-flete")) + " ÷ " + pct(u.entDesp) + " que llega (incluye devoluciones)", v: u.fleteC },
+    cpaC: { n: "Publicidad", s: "CPA " + money(cnum("c-cpa-esp")) + " ÷ " + pct(u.entEfec) + " que paga", v: u.cpaC }
+  };
+  var r = 80, circ = 2 * Math.PI * r, gap = 2, total = Math.max(u.venta, u.costoT, 1), acc = 0;
+  if(!segs.children.length){
+    segs.innerHTML = PIE.map(function(p){
+      return '<circle class="cpie-seg cpie-' + p.k + '" cx="100" cy="100" r="80" style="stroke:' + p.c + '"><title></title></circle>';
+    }).join("");
+    // Leyenda: costos primero y "Me queda" al final, como resultado.
+    leg.innerHTML = PIE.slice(1).concat(PIE[0]).map(function(p){
+      return '<div class="cpie-row' + (p.k === "net" ? " net" : "") + '" data-k="' + p.k + '"><i style="background:' + p.c + '"></i>' +
+        '<div><b></b><small></small></div><div class="v"><b></b><small></small></div></div>';
+    }).join("");
+  }
+  PIE.forEach(function(p, i){
+    var d = info[p.k], len = Math.max(0, d.v) / total * circ, seg = segs.children[i];
+    seg.style.strokeDasharray = Math.max(0, len - gap) + " " + (circ - Math.max(0, len - gap));
+    seg.style.strokeDashoffset = -acc;
+    seg.querySelector("title").textContent = d.n + ": " + money(d.v) + " (" + pct(d.v / u.venta) + " del precio)";
+    acc += len;
+    var row = leg.querySelector('[data-k="' + p.k + '"]');
+    row.querySelector("div b").textContent = d.n;
+    row.querySelector("div small").textContent = d.s;
+    row.querySelector(".v b").textContent = money(d.v);
+    row.querySelector(".v small").textContent = u.venta ? pct(d.v / u.venta) : "";
+  });
+  wrap.classList.toggle("neg", loss);
+  $("#c-pie-l").textContent = loss ? "Pierdo" : "Me queda";
+  $("#c-pie-v").textContent = money(u.utilidad);
+  $("#c-pie-s").textContent = "de " + money(u.venta);
+}
+["c-name","c-prov","c-flete","c-cpa-esp","c-dev","c-canc","c-margen"].forEach(function(id){ $("#" + id).addEventListener("input", costeo); });
+// Valores de "Restablecer": devoluciones, cancelaciones, CPA y margen son los que NovaSociety usa si no se dice otro;
+// el flete no tiene sugerido en NovaSociety (es obligatorio): 20.000 es de ejemplo (el de las Gotas Focus del prototipo,
+// COST_DEFAULTS) y la página lo dice así. El proveedor no se toca.
+function costDefaults(){
+  var D = PYL.core.search.COST_DEFAULTS;
+  return { "c-flete": D.flete, "c-dev": D.devRate, "c-canc": D.cancelRate, "c-cpa-esp": D.cpa, "c-margen": D.margin };
+}
+// El botón solo se activa cuando muevo alguna de esas barras.
+function resetState(){
+  var D = costDefaults();
+  $("#c-reset").disabled = Object.keys(D).every(function(id){ return cnum(id) === D[id]; });
+}
+// Devuelve el "Véndelo a" a Buscar producto (js/app/search.js escucha el evento y llena Precio de venta).
+$("#c-to-cand").addEventListener("click", function(){
+  if(lastPrice){ document.dispatchEvent(new CustomEvent("costeo:precio", { detail: { price: lastPrice } })); }
+});
+$("#c-reset").addEventListener("click", function(){
+  var D = costDefaults();
+  Object.keys(D).forEach(function(id){ var t = $("#" + id); t.value = fmt(D[id]); csSync(t.closest(".cs"), false); });
+  costeo(); toast("Volví a los valores que sugiere NovaSociety");
+});
 $("#c-apply").addEventListener("click", function(){
   costeo();
   if(lastCost && lastCost.tope > 0){ setProduct(lastCost); toast("Listo: " + lastCost.name + " es el producto activo en toda la app"); }
@@ -308,7 +424,7 @@ function updTrack(){
   $("#trackTip").style.left = Math.max(4, Math.min(96, pct)) + "%";
   $("#trackTip").textContent = money(g);
   [20, 30, 40].forEach(function(k){ $("#mk" + k).classList.toggle("hit", g >= k * 1000); });
-  $("#trackFill").style.background = g >= 40000 ? "linear-gradient(90deg,#22D3EE,#6378FF,#A78BFA)" : "linear-gradient(90deg,#22D3EE,#6378FF)";
+  $("#trackFill").style.background = g >= 40000 ? "linear-gradient(90deg,var(--b2),var(--b),var(--v))" : "linear-gradient(90deg,var(--b2),var(--b))";
 }
 ["s-gasto"].forEach(function(id){ $("#" + id).addEventListener("input", updTrack); });
 function setLight(c){
@@ -456,7 +572,7 @@ function runPanel(){
     '<div class="kpi"><div class="l">CPA hace 3 días</div><div class="v" style="font-size:19px">' + money(cpaDay[0]) + '</div></div>' +
     '<div class="kpi"><div class="l">CPA anteayer</div><div class="v" style="font-size:19px">' + money(cpaDay[1]) + '</div></div>' +
     '<div class="kpi"><div class="l">CPA ayer</div><div class="v" style="font-size:19px">' + money(cpaDay[2]) + '</div></div>' +
-    '<div class="kpi" style="--glow:rgba(99,120,255,.4)"><div class="l">CPA ventana</div><div class="v" style="font-size:19px">' + money(cpaWin) + '</div><div class="s">Este decide</div></div>';
+    '<div class="kpi" style="--glow:rgba(var(--b-rgb),.4)"><div class="l">CPA ventana</div><div class="v" style="font-size:19px">' + money(cpaWin) + '</div><div class="s">Este decide</div></div>';
 }
 ["l-nivel","l-g1","l-v1","l-g2","l-v2","l-g3","l-v3","l-pi3"].forEach(function(id){ $("#" + id).addEventListener("input", runPanel); $("#" + id).addEventListener("change", runPanel); });
 

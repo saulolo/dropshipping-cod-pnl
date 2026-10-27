@@ -7,7 +7,7 @@
 
   const NO_DATA = 'Sin datos suficientes en este filtro.';
   // Cortes de margen neto usados en todo el tablero: ±2% es equilibrio, 15% el mínimo sano y 20% el ideal.
-  const MARGIN = { even: 0.02, healthy: 0.15, ideal: 0.2 };
+  const MARGIN = { even: 0.02, low: 0.1, healthy: 0.15, ideal: 0.2 }; // low: piso del amarillo del evaluador de productos
   const b = (text) => ({ b: text });
   const row = (name, desc, value, bench, dx) => ({ name, desc, value, bench, level: dx ? dx[0] : '', text: dx ? dx[1] : NO_DATA });
 
@@ -192,5 +192,5 @@
     };
   }
 
-  core.diagnostics = { funnel, cascade, story, verdict, kpis };
+  core.diagnostics = { MARGIN, funnel, cascade, story, verdict, kpis };
 })();

@@ -1,4 +1,4 @@
-// Persistencia en el navegador: asignaciones campaña → producto (localStorage)
+// Persistencia en el navegador: asignaciones campaña → producto y búsqueda de productos (localStorage)
 // y el acceso al archivo consolidado (IndexedDB, porque localStorage no guarda handles).
 (() => {
   const services = (globalThis.PYL.services ??= {});
@@ -7,6 +7,14 @@
   const campaignMap = {
     load: () => { try { return JSON.parse(localStorage.getItem(MAP_KEY) || '{}'); } catch { return {}; } },
     save: (m) => { try { localStorage.setItem(MAP_KEY, JSON.stringify(m)); } catch { /* sin almacenamiento */ } },
+  };
+
+  // Pestaña Buscar producto: pasos hechos, rasgos marcados, candidato en edición y bitácora.
+  const SEARCH_KEY = 'pyl-search';
+  const search = {
+    load: () => { try { return JSON.parse(localStorage.getItem(SEARCH_KEY) || 'null'); } catch { return null; } },
+    // false si no cupo (las fotos pesan): quien llama avisa al usuario.
+    save: (s) => { try { localStorage.setItem(SEARCH_KEY, JSON.stringify(s)); return true; } catch { return false; } },
   };
 
   // Almacén clave-valor mínimo; cualquier fallo devuelve null en vez de lanzar.
@@ -25,5 +33,5 @@
     return { get: (k) => tx('readonly', (s) => s.get(k)), set: (k, v) => tx('readwrite', (s) => s.put(v, k)) };
   })();
 
-  services.storage = { campaignMap, idb };
+  services.storage = { campaignMap, search, idb };
 })();

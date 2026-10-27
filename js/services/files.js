@@ -43,5 +43,26 @@
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
   }
 
-  services.files = { readRows, pickXlsx, download, XLSX_MIME };
+  // Foto de producto reducida a JPEG (lado mayor = max px) para que quepa en localStorage.
+  function imageDataURL(file, max = 400, quality = 0.75) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onerror = () => rej(r.error);
+      r.onload = () => {
+        const img = new Image();
+        img.onerror = () => rej(new Error('Imagen no válida'));
+        img.onload = () => {
+          const k = Math.min(1, max / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          res(c.toDataURL('image/jpeg', quality));
+        };
+        img.src = r.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  services.files = { readRows, pickXlsx, download, imageDataURL, XLSX_MIME };
 })();

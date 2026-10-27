@@ -376,17 +376,20 @@ js/
     diagnostics.js    Benchmarks del embudo y la cascada, historia ejecutiva, veredicto, semáforos KPI
     insights.js       Periodo anterior, semanas, proyección, simulador, unit economics, plan de acción
     excel.js          Plantilla y escritura del consolidado de 20 columnas
+    search.js         Buscar producto: umbrales VDO/DropKiller, ciclo de vida, flujograma, evaluación de candidatos
     index.js          Solo Node: exporta todo el núcleo para pruebas
 
   services/           Adaptadores a APIs del navegador
-    storage.js        localStorage (asignaciones) e IndexedDB (archivo vinculado)
+    storage.js        localStorage (asignaciones, búsqueda de productos) e IndexedDB (archivo vinculado)
     files.js          Lectura de .xlsx/.csv, selector y descarga
     consolidado.js    Archivo consolidado con File System Access (Chrome/Edge)
 
   ui/                 Componentes que pintan el DOM. Reciben datos por parámetro.
     dom.js, tooltip.js, feedback.js, upload-zones.js, notices.js, trend.js,
     summary.js, cascade.js, funnel.js, diagnosis-panel.js, unit-table.js,
-    simulator.js, products-table.js, campaigns-table.js, presets.js, report.js
+    simulator.js, products-table.js, campaigns-table.js, presets.js, report.js,
+    search.js         Pestaña Buscar producto (flujograma, semáforo VDO, fichas)
+    candidate.js      Evaluador de candidatos: formulario con foto, score /8, utilidad, bitácora y estadísticas
 
   app/                Estado y casos de uso; conecta core, services y ui
     state.js          Estado único de la aplicación
@@ -394,6 +397,7 @@ js/
     data-loader.js    Carga de reportes y asignación campaña → producto
     save.js           Guardar en el consolidado, exportar, cambiar archivo
     report.js         Reúne el cálculo actual y genera el informe PDF
+    search.js         Estado de Buscar producto (app.state.search) y paso del candidato al Costeo
     main.js           render() y arranque. Va siempre de último.
 ```
 

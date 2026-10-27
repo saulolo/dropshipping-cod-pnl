@@ -19,5 +19,15 @@
     group.querySelectorAll(selector).forEach((x) => { const on = x === active; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); });
   }
 
-  ui.dom = { $, el, rich, chip, setPressed };
+  // Copia texto al portapapeles; si el navegador bloquea la API, usa un textarea temporal. Devuelve true si copió.
+  async function copy(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {
+      const ta = el('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch { /* sin portapapeles */ }
+      ta.remove(); return ok;
+    }
+  }
+
+  ui.dom = { $, el, rich, chip, setPressed, copy };
 })();
