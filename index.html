@@ -37,6 +37,7 @@
     <nav class="tabs" id="tabs" aria-label="Módulos">
       <button data-v="dash" aria-current="page">Inicio</button>
       <button data-v="buscar">Buscar producto</button>
+      <button data-v="desarrollo">Desarrollo</button>
       <button data-v="costeo">Costeo</button>
       <button data-v="metricas">Hard Metrics</button>
       <button data-v="sim">Simulador</button>
@@ -190,20 +191,30 @@
   </div>
 
   <nav class="b-route" aria-label="Pasos de la búsqueda">
-    <a href="#b-sec-vdo"><span>1</span>Estrategia VDO</a>
-    <a href="#b-sec-flow"><span>2</span>Flujograma DropKiller</a>
-    <a href="#b-cand"><span>3</span>Mi candidato</a>
-    <a href="#b-sec-log"><span>4</span>Bitácora</a>
-    <button type="button" data-go="costeo"><span>5</span>Costeo →</button>
+    <a href="#b-sec-win"><span>1</span>Producto ganador</a>
+    <a href="#b-sec-vdo"><span>2</span>Estrategia VDO</a>
+    <a href="#b-sec-flow"><span>3</span>Flujograma DropKiller</a>
+    <a href="#b-cand"><span>4</span>Mi candidato</a>
+    <a href="#b-sec-log"><span>5</span>Bitácora</a>
+    <button type="button" data-go="costeo"><span>6</span>Costeo →</button>
   </nav>
+
+  <details class="card mt b-sec" id="b-sec-win">
+    <summary>
+      <div><h2>¿Es un producto ganador?</h2><p class="muted b-sub">Lo primero que reviso. Toco lo que mi candidato cumple: se guarda con él en la bitácora.</p></div>
+    </summary>
+    <div class="b-win mt" id="b-winner"></div>
+  </details>
 
   <details class="card mt b-sec" id="b-sec-vdo">
     <summary>
       <div><h2>Estrategia VDO</h2><p class="muted b-sub">Las tres reglas antes de encender una campaña, y dónde pongo el esfuerzo.</p></div>
     </summary>
-    <div class="grid g2 mt">
-      <div class="b-vdos" id="b-vdo"></div>
-      <div class="b-pyrs" id="b-pyramid"></div>
+    <div class="b-vdos mt" id="b-vdo"></div>
+    <div class="b-pm-sec">
+      <h3>La pirámide del producto ganador</h3>
+      <p class="muted b-sub">Dónde pongo el esfuerzo: abajo está la mayor responsabilidad. Toco un nivel y luego cada parte.</p>
+      <div class="pm mt" id="b-pyr-map"></div>
     </div>
     <details class="acc mt b-life">
       <summary>Ciclo de vida del producto <small class="soft">por ventas totales sumando todos los proveedores · solo entro en validación</small></summary>
@@ -287,6 +298,50 @@
   </details>
 </section>
 
+<!-- ================= DESARROLLO DEL PRODUCTO ================= -->
+<section class="view" id="v-desarrollo">
+  <div class="head">
+    <div>
+      <div class="eyebrow">Después de buscar · antes de pautar</div>
+      <h1>Desarrollo del producto</h1>
+      <p class="lead">Monto la página del producto en Shopify, paso a paso y en orden. Marco cada casilla al terminarla: se guarda en este navegador.</p>
+    </div>
+    <span class="tag tv">Criterio NovaSociety · Módulo 5</span>
+  </div>
+
+  <div class="seg" role="group" aria-label="Parte del desarrollo">
+    <button type="button" aria-pressed="true">🛍️ Landing en Shopify</button>
+    <button type="button" aria-pressed="false" disabled title="Pronto">Meta Ads · pronto</button>
+    <button type="button" aria-pressed="false" disabled title="Pronto">TikTok Ads · pronto</button>
+  </div>
+
+  <div class="card mt" id="d-prod">
+    <div class="row between">
+      <div>
+        <h2>Producto que estoy montando</h2>
+        <p class="muted b-sub">Con estos datos se llenan los prompts, los precios y la oferta de cada paso.</p>
+      </div>
+      <button class="btn ghost sm" id="d-pull" type="button">Traer de mi candidato</button>
+    </div>
+    <div class="ld-fields mt">
+      <div class="field"><label for="d-f-name">Nombre del producto</label><input id="d-f-name" type="text" placeholder="Ej. Magnesium Complex"></div>
+      <div class="field"><label for="d-f-dropi">ID de Dropi</label><input id="d-f-dropi" type="text" placeholder="Ej. 2130581"></div>
+      <div class="field"><label for="d-f-cost">Precio del proveedor</label><input id="d-f-cost" type="text" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label for="d-f-price">Precio de venta</label><input id="d-f-price" type="text" inputmode="numeric" placeholder="0"><span class="hint">El "Véndelo a" del Costeo.</span></div>    </div>
+  </div>
+
+  <div class="card mt b-flow-card">
+    <div class="row between">
+      <div><h2>Landing en Shopify</h2><p class="muted b-sub">Toco un paso para ver qué hago, copiar los prompts y los datos que pego en cada app.</p></div>
+    </div>
+    <div class="b-prog mt" id="d-prog"></div>
+    <div class="b-flow mt">
+      <ol class="fl" id="d-steps"></ol>
+      <div class="fl-side" id="d-step" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= COSTEO ================= -->
 <section class="view" id="v-costeo">
   <div class="head">
@@ -309,7 +364,7 @@
         <div class="cs" data-unit="pct"><div class="cs-top"><label for="c-dev">% devoluciones</label><span class="cs-val"><input id="c-dev" type="text" inputmode="numeric" value="25"> %</span></div><input type="range" min="0" max="60" step="1" aria-label="% devoluciones"></div>
         <div class="cs" data-unit="pct"><div class="cs-top"><label for="c-canc">% cancelaciones</label><span class="cs-val"><input id="c-canc" type="text" inputmode="numeric" value="25"> %</span></div><input type="range" min="0" max="60" step="1" aria-label="% cancelaciones"></div>
         <div class="cs" data-unit="cop"><div class="cs-top"><label for="c-cpa-esp">CPA que espero pagar</label><span class="cs-val">$ <input id="c-cpa-esp" type="text" inputmode="numeric" value="15000"></span></div><input type="range" min="0" max="60000" step="500" aria-label="CPA que espero pagar"></div>
-        <div class="cs" data-unit="pct"><div class="cs-top"><label for="c-margen">Margen que quiero</label><span class="cs-val"><input id="c-margen" type="text" inputmode="numeric" value="13"> %</span></div><input type="range" min="0" max="50" step="1" aria-label="Margen que quiero"></div>
+        <div class="cs" data-unit="pct"><div class="cs-top"><label for="c-margen-q">Margen que quiero</label><span class="cs-val"><input id="c-margen-q" type="text" inputmode="numeric" value="13"> %</span></div><input type="range" min="0" max="50" step="1" aria-label="Margen que quiero"></div>
       </div>
       <button class="btn ghost sm mt" type="button" id="c-reset" title="Flete de ejemplo $20.000 (NovaSociety no sugiere flete), devoluciones 25%, cancelaciones 25%, CPA $15.000 y margen 13%">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
@@ -943,6 +998,7 @@
 <script src="js/core/insights.js"></script>
 <script src="js/core/excel.js"></script>
 <script src="js/core/search.js"></script>
+<script src="js/core/landing.js"></script>
 <!-- Services: archivos y almacenamiento del navegador -->
 <script src="js/services/storage.js"></script>
 <script src="js/services/files.js"></script>
@@ -966,6 +1022,7 @@
 <script src="js/ui/presets.js"></script>
 <script src="js/ui/search.js"></script>
 <script src="js/ui/candidate.js"></script>
+<script src="js/ui/landing.js"></script>
 <!-- App: estado, casos de uso y arranque (main.js va al final) -->
 <script src="js/app/state.js"></script>
 <script src="js/app/filters.js"></script>
@@ -973,6 +1030,7 @@
 <script src="js/app/save.js"></script>
 <script src="js/app/report.js"></script>
 <script src="js/app/search.js"></script>
+<script src="js/app/landing.js"></script>
 <script src="js/app/trainer.js"></script>
 <script src="js/app/main.js"></script>
 </body>

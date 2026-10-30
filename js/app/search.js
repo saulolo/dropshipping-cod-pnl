@@ -30,13 +30,33 @@
   // ---------- Flujograma ----------
   function renderFlow() {
     const total = C.FLOW.length, i = Math.min(S.active, total - 1), s = C.FLOW[i];
+    const doneCount = C.FLOW.filter((x) => S.done[x.k]).length;
+    const reset = () => { S.done = {}; S.active = 0; persist(); renderFlow(); };
     U.flowList($('#b-flow'), C.FLOW, i, S.done, (j) => { S.active = j; persist(); renderFlow(); });
     U.flowStep($('#b-step'), s, i, total, !!S.done[s.k], {
       toggle: () => { S.done[s.k] = !S.done[s.k]; if (S.done[s.k] && i < total - 1) S.active = i + 1; persist(); renderFlow(); },
       next: () => { S.active = i + 1; persist(); renderFlow(); },
       costeo: () => costear(S.draft),
+      reset: doneCount ? reset : null,
     });
-    U.progress($('#b-prog'), C.FLOW.filter((x) => S.done[x.k]).length, total, () => { S.done = {}; S.active = 0; persist(); renderFlow(); });
+    U.progress($('#b-prog'), doneCount, total, reset);
+  }
+
+  // ---------- Producto ganador ----------
+  // Las marcas van en el candidato (draft.traits): se guardan con él en la bitácora.
+  function renderWinner() {
+    const t = S.draft.traits || {};
+    U.winner($('#b-winner'), C.WINNER, C.WINNER_GROUPS, t, C.winnerCheck(t), (k) => {
+      S.draft.traits = { ...(S.draft.traits || {}), [k]: !t[k] };
+      persist(); renderWinner();
+    });
+  }
+
+  // ---------- Pirámide del producto ganador ----------
+  // Lo elegido no se guarda: al abrir la página arranca en la base (producto y oferta).
+  const pyr = { lvl: 'pro', item: null };
+  function renderPyramid() {
+    U.pyramidMap($('#b-pyr-map'), C.PYRAMID, pyr, (lvl, item) => { pyr.lvl = lvl; pyr.item = item; renderPyramid(); });
   }
 
   // ---------- Mi candidato ----------
@@ -57,7 +77,7 @@
   function loadDraft(d, id) {
     if (d.msp !== undefined) d.msp = C.mspLevel(d.msp) || '';
     S.draft = d; S.editingId = id || null; persist();
-    K.fill($('#b-form'), S.draft); renderLive(); renderLog(); mirror(d);
+    K.fill($('#b-form'), S.draft); renderLive(); renderLog(); renderWinner(); mirror(d);
   }
 
   // "Poner este precio en mi candidato" del Costeo: llega el "Véndelo a" y vuelvo a Buscar producto con él en Precio de venta.
@@ -175,9 +195,8 @@
   $('#b-views').addEventListener('click', (e) => { const b = e.target.closest('[data-bview]'); if (b) { S.view = b.dataset.bview; persist(); renderLog(); } });
 
   U.vdo($('#b-vdo'), C.VDO);
-  U.pyramid($('#b-pyramid'), C.PYRAMID);
   U.cards($('#b-tools'), C.TOOLS);
   U.cards($('#b-research'), C.RESEARCH);
   U.mistakes($('#b-mistakes'), C.MISTAKES);
-  renderFlow(); renderLive(); renderLog();
+  renderWinner(); renderPyramid(); renderFlow(); renderLive(); renderLog();
 })();

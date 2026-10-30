@@ -42,11 +42,44 @@
     return s.upTo === Infinity ? `+${n(from - 1)}` : `${n(from)} – ${n(s.upTo)}`;
   };
 
-  // Pirámide de responsabilidad: dónde poner el esfuerzo.
+  // Pirámide del producto ganador (versión completa e interactiva). Arriba = menor responsabilidad.
+  // Cada parte: p = viñetas; yes/no = ejemplo que sí / que no; ex = ejemplo de la oferta.
   const PYRAMID = [
-    { k: 'pag', pct: 20, t: 'Landing page', d: 'Dolores claros, cero fricción, buenas imágenes, testimonios reales.' },
-    { k: 'cre', pct: 30, t: 'Creativos', d: 'Iluminación, edición dinámica, buen hook, guion persuasivo.' },
-    { k: 'pro', pct: 50, t: 'Producto y oferta', d: 'MSP, percepción de valor, efecto wow, competencia. Oferta: descuento, 2x1 (sube el ticket sin subir el CPA), obsequios, urgencia.' },
+    { k: 'pag', pct: 20, t: 'Landing', level: 'Menor responsabilidad', groups: [{ t: 'Landing', items: [
+      { k: 'dolores', t: 'Dolores', p: ['La página arranca por el problema que le arde al cliente, dicho con sus palabras.'] },
+      { k: 'friccion', t: 'Anti-fricción', p: ['Formulario corto y pago contra entrega.', [{ b: 'Que no exista fricción' }, ': nada que lo haga dudar o salirse.']] },
+      { k: 'imagenes', t: 'Buenas imágenes', p: ['Fotos claras del producto en uso, mostrando el resultado.'] },
+      { k: 'testimonios', t: 'Testimonios', p: ['Reales y de gente parecida al cliente: bajan la desconfianza.'] },
+    ] }] },
+    { k: 'cre', pct: 30, t: 'Creativos', level: 'Media responsabilidad', groups: [{ t: 'Creativos', items: [
+      { k: 'luz', t: 'Iluminación', p: ['El producto se ve bien: luz clara, nada oscuro ni borroso.'] },
+      { k: 'edicion', t: 'Edición', p: ['Dinámica: cortes rápidos, textos en pantalla y buen ritmo.'] },
+      { k: 'hook', t: 'Buen hook', p: [['El gancho va en los ', { b: 'primeros 3 segundos' }, ': frena el scroll.'], 'Si el CPM sale caro, la solución son creativos nuevos con mejor hook.'] },
+      { k: 'guion', t: 'Guión', p: ['Persuasivo: problema → solución → prueba → oferta.'] },
+      { k: 'validacion', t: 'Validación', p: ['Antes de grabar miro qué ya funciona:', [{ b: 'Kalodata' }, ' → ventas.'], [{ b: 'TikTok' }, ' → interacción.']] },
+    ] }] },
+    { k: 'pro', pct: 50, t: 'Producto y oferta', level: 'Mayor responsabilidad', groups: [
+      { t: 'Producto', numbered: true, items: [
+        { k: 'msp', t: 'MSP', p: ['Que resuelva un problema que la gente sufre de verdad.'],
+          yes: { t: 'Cápsulas para la ciática', li: ['Dolor que no deja dormir ni caminar', 'Ya lo sufre: no hay que convencerlo', 'Está buscando solución activamente'] },
+          no: { t: 'Espátula de cocina', li: ['Nadie pierde el sueño por voltear un huevo', 'Es comodidad, no dolor', 'Compra planeada, nunca por impulso'] } },
+        { k: 'valor', t: 'Percepción de valor', p: ['Que se vea caro y valga lo que cobro.'],
+          yes: { t: 'Cepillo secador', li: ['Se ve aparato: tiene peso y volumen', 'Reemplaza secador, cepillo y plancha', 'La caja comunica precio alto'] },
+          no: { t: 'Frasco de sérum', li: ['Frasco pequeño se lee como poco producto', 'Hay que explicar por qué vale lo que vale', 'Sin volumen visual no hay valor percibido'] } },
+        { k: 'competencia', t: 'Competencia', p: [['Sumo las ventas de ', { b: 'todos los ID' }, ' del producto, no de un solo proveedor.'], ['Ventas 7 días: máximo ', { b: n(LIMITS.v7.max) }, '. Ventas totales: ', { b: `${n(LIMITS.total.min)} – ${n(LIMITS.total.ideal)}` }, '.']],
+          yes: { t: 'Sopladora larga y aspirado doble', li: ['12 ventas en 7 días', '32 en 30 días', '57 totales: nadie lo está escalando'] },
+          no: { t: 'Revitalizador Viresta', li: ['726 ventas en 7 días', '4.966 en 30 días', '13.119 totales: masificado'] } },
+        { k: 'wow', t: 'Efecto WOW', p: ['Que sorprenda y dé ganas de comentarlo.'],
+          yes: { t: 'Pistola de pintura', li: ['Antes y después visible en 10 segundos', 'Reemplaza brocha y rodillo por completo', 'Da ganas de mostrárselo a alguien'] },
+          no: { t: 'Juego de cuchillos', li: ['Todo el mundo ya tiene uno', 'No hay nada que demostrar', 'No sorprende: no genera comentario'] } },
+      ] },
+      { t: 'Oferta', items: [
+        { k: 'descuento', t: 'Descuento', p: ['El precio tachado ancla cuánto vale de verdad', '50% se entiende sin calcular nada', 'Da la razón para comprar hoy'], ex: 'Descuento del 50%: pague 1 lleve 2 a $99.900' },
+        { k: 'urgencia', t: 'Urgencia', p: ['Mata el "lo pienso y después vuelvo"', 'Convierte interés en decisión'], ex: '¡Promoción por tiempo limitado! Últimas unidades disponibles al precio de hoy' },
+        { k: 'obsequio', t: 'Obsequio', p: ['Valor percibido alto a costo casi cero', 'Digital: no toca el margen', 'El valor del bono infla el precio total de la oferta'], ex: 'Bono gratis por WhatsApp: guía PDF "7 alimentos que potencian tu colágeno"' },
+        { k: '2x1', t: '2x1', p: [['Sube el ticket (', { b: 'AOV' }, ') sin subir el CPA'], 'El cliente siente que ganó, no que gastó', 'Un solo envío para dos unidades: más margen'], ex: 'Pague 1 lleve 2 a $99.900 + envío gratis' },
+      ] },
+    ] },
   ];
 
   // Estrategia VDO: las tres reglas antes de encender una campaña.
@@ -58,6 +91,41 @@
     { k: 'O', t: 'Oferta', rule: ['Menos de ', { b: `${LIMITS.advertisers} anunciantes activos` }, ' (anunciantes, no anuncios). Miro si mandan a landing o a WhatsApp.'],
       avoid: 'Copiar el mismo ángulo: creo ángulos para públicos distintos.' },
   ];
+
+  // Producto ganador: lo primero que reviso de un candidato. must = sin esto no lo puedo vender.
+  const WINNER_GROUPS = [
+    { k: 'car', t: 'Características de un producto ganador' },
+    { k: 'asp', t: 'Aspectos importantes' },
+  ];
+  const WINNER = [
+    { k: 'valor', group: 'car', icon: '💎', t: 'Alta percepción de valor',
+      d: ['Que no sea un producto que la gente ', { b: 'consiga muy barato' }, ' en cualquier lado. Se ve caro y vale lo que cobro.'] },
+    { k: 'wow', group: 'car', icon: '🤩', t: 'Efecto wow',
+      d: ['Que sea ', { b: 'llamativo' }, ': frena el scroll y dan ganas de verlo funcionar.'] },
+    { k: 'problema', group: 'car', icon: '🩹', t: 'Resuelve un problema',
+      d: ['Le quita un dolor real a la gente. Por ejemplo, los nichos de ', { b: 'belleza, salud y bienestar' }, '.'] },
+    { k: 'validado', group: 'asp', icon: '✅', t: 'Producto validado', must: true,
+      d: ['Que ', { b: 'ya se esté vendiendo' }, ', sea en USA, Colombia u otro país.'] },
+    { k: 'dropi', group: 'asp', icon: '📦', t: 'Está en Dropi y con stock', must: true,
+      d: ['Si no está en Dropi ', { b: 'no lo puedo vender' }, '. Más adelante puedo desarrollar marca propia con un laboratorio.'] },
+    { k: 'creativos', group: 'asp', icon: '🎬', t: 'Disponibilidad creativa',
+      d: ['Que haya ', { b: 'videos en internet' }, ' que pueda bajar y personalizar para mi tienda y pautarlo.'] },
+  ];
+
+  // Cuántas cumple y qué veredicto da. traits = { k: true }. tone: 'g' | 'y' | 'r'.
+  function winnerCheck(traits) {
+    const t = traits || {}, ok = (x) => !!t[x.k];
+    const missing = WINNER.filter((x) => !ok(x)), mustMissing = missing.filter((x) => x.must);
+    const done = WINNER.length - missing.length, total = WINNER.length;
+    const names = (list) => list.map((x) => x.t.toLowerCase()).join(', ');
+    let v;
+    if (!done) v = { tone: null, title: 'Marco lo que cumple mi producto', text: ['Toco cada tarjeta que mi candidato cumpla. Si pasa este filtro, sigo con la ', { b: 'Estrategia VDO' }, '.'] };
+    else if (mustMissing.length) v = { tone: 'r', title: 'Así no lo puedo vender', text: ['Le falta: ', { b: names(mustMissing) }, '. Sin eso no hay producto: busco otro o confirmo primero.'] };
+    else if (!missing.length) v = { tone: 'g', title: 'Pinta a producto ganador', text: ['Cumple las ', { b: `${total} características` }, '. Sigo con la Estrategia VDO y los números de DropKiller.'] };
+    else if (done >= total - 2) v = { tone: 'y', title: 'Casi: le falta poco', text: ['Le falta: ', { b: names(missing) }, '. Lo sigo mirando, pero sé dónde está débil.'] };
+    else v = { tone: 'r', title: 'Mejor busco otro', text: ['Solo cumple ', { b: `${done} de ${total}` }, '. Un producto así me hace quemar plata en el testeo.'] };
+    return { done, total, missing: missing.map((x) => x.k), mustMissing: mustMissing.map((x) => x.k), ...v };
+  }
 
   // Flujograma de DropKiller. `gate` = decisión antes de pasar al siguiente paso.
   const FLOW = [
@@ -327,7 +395,7 @@
   }
 
   core.search = {
-    LIMITS, STAGES, stage, stageRange, PYRAMID, VDO, FLOW, TOOLS, RESEARCH, MISTAKES,
+    LIMITS, STAGES, stage, stageRange, PYRAMID, VDO, WINNER, WINNER_GROUPS, winnerCheck, FLOW, TOOLS, RESEARCH, MISTAKES,
     COUNTRIES, STATUS, MSP, mspLevel, VALUE, SATURATION, COST_DEFAULTS, SCORE_MAX, SCORE_LEVELS, FILTERS,
     unitCost, priceFor, marginLevel, competition, ageMonths, scoreParts, score, scoreLevel, evaluate, list, stats,
   };

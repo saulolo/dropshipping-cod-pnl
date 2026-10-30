@@ -66,6 +66,12 @@
     const mark = el('button', 'btn sm' + (isDone ? ' ghost' : ''), isDone ? 'Desmarcar' : 'Listo, lo hice');
     mark.type = 'button'; mark.addEventListener('click', on.toggle);
     acts.append(mark);
+    // on.reset solo llega si hay algún paso hecho.
+    if (on.reset) {
+      const rs = el('button', 'btn ghost sm', 'Desmarcar todos');
+      rs.type = 'button'; rs.title = 'Desmarca todos los pasos para empezar con otro producto';
+      rs.addEventListener('click', on.reset); acts.append(rs);
+    }
     if (i < total - 1) {
       const nx = el('button', 'btn ghost sm', 'Siguiente paso →');
       nx.type = 'button'; nx.addEventListener('click', on.next); acts.append(nx);
@@ -121,6 +127,104 @@
     });
   }
 
+  // ---------- Producto ganador ----------
+  // Anillo de progreso + veredicto arriba; tarjetas que se marcan con un toque, agrupadas.
+  function winner(node, items, groups, traits, check, onToggle) {
+    node.textContent = '';
+    const top = el('div', 'b-win-top');
+    const ring = el('div', 'b-win-ring' + (check.tone ? ' ' + check.tone : ''));
+    ring.style.setProperty('--p', Math.round((check.done / check.total) * 100) + '%');
+    const rc = el('div', 'b-win-rc'); rc.append(el('b', null, String(check.done)), el('small', null, 'de ' + check.total));
+    ring.append(rc);
+    const v = el('div', 'b-verdict b-win-v');
+    v.append(light(check.tone));
+    const tx = el('div'); tx.append(el('b', 'b-vt', check.title), seg('b-vs', check.text));
+    v.append(tx);
+    top.append(ring, v);
+    node.append(top);
+    groups.forEach((g) => {
+      node.append(el('h3', 'b-win-gh', g.t));
+      const grid = el('div', 'b-win-grid');
+      items.filter((x) => x.group === g.k).forEach((x) => {
+        const on = !!traits[x.k];
+        const b = el('button', 'b-win-c' + (on ? ' on' : ''));
+        b.type = 'button'; b.setAttribute('aria-pressed', String(on));
+        const head = el('div', 'b-win-h');
+        head.append(el('span', 'b-win-ic', x.icon), el('span', 'b-win-ck', on ? '✓' : ''));
+        b.append(head, el('b', 'b-win-t', x.t), seg('b-win-d', x.d));
+        const foot = el('div', 'b-win-f');
+        foot.append(el('span', null, on ? 'Lo cumple' : '¿Lo cumple? Toco aquí'));
+        if (x.must) foot.append(el('span', 'tag tr', 'Obligatorio'));
+        b.append(foot);
+        b.addEventListener('click', () => onToggle(x.k));
+        grid.append(b);
+      });
+      node.append(grid);
+    });
+  }
+
+  // ---------- Pirámide del producto ganador ----------
+  // Pirámide de tres niveles + eje de enfoque; al lado, las partes del nivel elegido y el detalle de la parte.
+  // sel = { lvl, item }. onSelect(lvl, item).
+  function pyramidMap(node, levels, sel, onSelect) {
+    node.textContent = '';
+    const L = levels.find((x) => x.k === sel.lvl) || levels[levels.length - 1];
+    const all = L.groups.flatMap((g) => g.items), it = all.find((x) => x.k === sel.item) || all[0];
+
+    const fig = el('div', 'pm-fig');
+    const tri = el('div', 'pm-tri');
+    levels.forEach((x) => {
+      const b = el('button', 'pm-lv pm-' + x.k + (x.k === L.k ? ' on' : ''));
+      b.type = 'button'; b.setAttribute('aria-pressed', String(x.k === L.k));
+      b.append(el('b', null, x.t), el('span', null, x.pct + '%'));
+      b.addEventListener('click', () => onSelect(x.k, null));
+      tri.append(b);
+    });
+    const axis = el('div', 'pm-axis');
+    axis.append(el('span', null, 'Menor enfoque'), el('i'), el('span', null, 'Mayor enfoque'));
+    fig.append(tri, axis);
+
+    const side = el('div', 'pm-side pop pm-' + L.k);
+    const hd = el('div', 'pm-hd');
+    hd.append(el('span', 'pm-pct', L.pct + '%'));
+    const ht = el('div'); ht.append(el('h3', null, L.t), el('small', null, L.level));
+    hd.append(ht); side.append(hd);
+    L.groups.forEach((g) => {
+      if (L.groups.length > 1) side.append(el('div', 'pm-gt', g.t));
+      const chips = el('div', 'pm-chips');
+      g.items.forEach((x, i) => {
+        const c = el('button', 'pm-chip' + (x.k === it.k ? ' on' : ''));
+        c.type = 'button'; c.setAttribute('aria-pressed', String(x.k === it.k));
+        if (g.numbered) c.append(el('span', 'pm-n', String(i + 1)));
+        c.append(x.t);
+        c.addEventListener('click', () => onSelect(L.k, x.k));
+        chips.append(c);
+      });
+      side.append(chips);
+    });
+
+    const det = el('div', 'pm-det');
+    det.append(el('b', 'pm-dt', it.t));
+    const ul = el('ul', 'pm-li');
+    it.p.forEach((x) => { const li = el('li'); rich(li, Array.isArray(x) ? x : [x]); ul.append(li); });
+    det.append(ul);
+    if (it.yes || it.no) {
+      const vs = el('div', 'pm-vs');
+      [['yes', '✓ Sí', 'g'], ['no', '✕ No', 'r']].forEach(([k, lab, tone]) => {
+        const e = it[k]; if (!e) return;
+        const c = el('div', 'pm-ex ' + tone);
+        const h = el('div', 'pm-exh'); h.append(el('span', 'tag ' + TAG[tone], lab), el('b', null, e.t));
+        const l = el('ul'); e.li.forEach((t) => l.append(el('li', null, t)));
+        c.append(h, l); vs.append(c);
+      });
+      det.append(vs);
+    }
+    if (it.ex) { const ex = el('div', 'pm-ad'); ex.append(el('small', null, 'Así se ve'), el('b', null, it.ex)); det.append(ex); }
+    side.append(det);
+
+    node.append(fig, side);
+  }
+
   // ---------- Fichas de consulta ----------
   function vdo(node, items) {
     node.textContent = '';
@@ -129,16 +233,6 @@
       c.append(el('span', 'b-letter', x.k));
       const tx = el('div'); tx.append(el('b', null, x.t), seg('b-rule', x.rule), el('small', null, 'Evito: ' + x.avoid));
       c.append(tx); node.append(c);
-    });
-  }
-
-  function pyramid(node, items) {
-    node.textContent = '';
-    items.forEach((x) => {
-      const r = el('div', 'b-pyr p-' + x.k);
-      r.style.setProperty('--w', 40 + x.pct * 1.2 + '%');
-      const bar = el('div', 'b-pyr-bar'); bar.append(el('b', null, x.pct + '%'), el('span', null, x.t));
-      r.append(bar, el('small', null, x.d)); node.append(r);
     });
   }
 
@@ -159,5 +253,5 @@
     node.append(ol);
   }
 
-  PYL.ui.search = { flowList, flowStep, progress, result, stages, vdo, pyramid, cards, mistakes };
+  PYL.ui.search = { flowList, flowStep, progress, result, stages, winner, vdo, pyramidMap, cards, mistakes };
 })();

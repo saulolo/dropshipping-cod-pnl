@@ -170,7 +170,7 @@ function costSide(o){
 var lastCost = null;
 function costeo(){
   var C = cnum("c-prov"), F = cnum("c-flete"), cpa = cnum("c-cpa-esp");
-  var dev = cnum("c-dev"), canc = cnum("c-canc"), mar = cnum("c-margen");
+  var dev = cnum("c-dev"), canc = cnum("c-canc"), mar = cnum("c-margen-q");
   var e = (100 - dev - canc) / 100, d = (100 - dev) / 100;
   var kp = $("#c-kpis"), zone = $("#c-zone"), msg = $("#c-msg");
   resetState();
@@ -285,13 +285,13 @@ function costPie(u){
   $("#c-pie-v").textContent = money(u.utilidad);
   $("#c-pie-s").textContent = "de " + money(u.venta);
 }
-["c-name","c-prov","c-flete","c-cpa-esp","c-dev","c-canc","c-margen"].forEach(function(id){ $("#" + id).addEventListener("input", costeo); });
+["c-name","c-prov","c-flete","c-cpa-esp","c-dev","c-canc","c-margen-q"].forEach(function(id){ $("#" + id).addEventListener("input", costeo); });
 // Valores de "Restablecer": devoluciones, cancelaciones, CPA y margen son los que NovaSociety usa si no se dice otro;
 // el flete no tiene sugerido en NovaSociety (es obligatorio): 20.000 es de ejemplo (el de las Gotas Focus del prototipo,
 // COST_DEFAULTS) y la página lo dice así. El proveedor no se toca.
 function costDefaults(){
   var D = PYL.core.search.COST_DEFAULTS;
-  return { "c-flete": D.flete, "c-dev": D.devRate, "c-canc": D.cancelRate, "c-cpa-esp": D.cpa, "c-margen": D.margin };
+  return { "c-flete": D.flete, "c-dev": D.devRate, "c-canc": D.cancelRate, "c-cpa-esp": D.cpa, "c-margen-q": D.margin };
 }
 // El botón solo se activa cuando muevo alguna de esas barras.
 function resetState(){

@@ -17,6 +17,13 @@
     save: (s) => { try { localStorage.setItem(SEARCH_KEY, JSON.stringify(s)); return true; } catch { return false; } },
   };
 
+  // Pestaña Desarrollo: producto que estoy montando, casillas marcadas y textos de SEO.
+  const LANDING_KEY = 'pyl-landing';
+  const landing = {
+    load: () => { try { return JSON.parse(localStorage.getItem(LANDING_KEY) || 'null'); } catch { return null; } },
+    save: (s) => { try { localStorage.setItem(LANDING_KEY, JSON.stringify(s)); return true; } catch { return false; } },
+  };
+
   // Almacén clave-valor mínimo; cualquier fallo devuelve null en vez de lanzar.
   const idb = (() => {
     const open = () => new Promise((res, rej) => {
@@ -33,5 +40,5 @@
     return { get: (k) => tx('readonly', (s) => s.get(k)), set: (k, v) => tx('readwrite', (s) => s.put(v, k)) };
   })();
 
-  services.storage = { campaignMap, search, idb };
+  services.storage = { campaignMap, search, landing, idb };
 })();
