@@ -31,21 +31,22 @@
     if (opt.ph != null) x.placeholder = opt.ph;
     box.append(lab);
     if (opt.money || opt.pct) { const w = el('div', opt.money ? 'in-money' : 'in-pct'); w.append(x); box.append(w); }
-    else if (opt.copy) { const w = el('div', 'in-copy'); w.append(x, copyBtn(x, label)); box.append(w); }
+    else if (opt.copy) { const w = el('div', 'in-copy'); w.append(x, copyBtn(() => x.value, label)); box.append(w); }
     else box.append(x);
     return box;
   }
 
-  // Botón para copiar el valor de un campo (nombre, ID Dropi) sin tener que seleccionarlo.
+  // Botón para copiar un valor (nombre, ID Dropi) sin tener que seleccionarlo.
+  // get() devuelve el texto al momento del clic; cls = variante ('inline' en la bitácora).
   const ICON_COPY = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   const ICON_OK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg>';
-  function copyBtn(x, label) {
-    const b = el('button', 'cd-copy'); b.type = 'button';
+  function copyBtn(get, label, cls) {
+    const b = el('button', 'cd-copy' + (cls ? ' ' + cls : '')); b.type = 'button';
     b.title = 'Copiar ' + label.toLowerCase(); b.setAttribute('aria-label', b.title); b.innerHTML = ICON_COPY;
     const tip = el('span', 'cd-copy-tip'); b.append(tip);
     let t;
     b.addEventListener('click', async () => {
-      const v = x.value.trim(), ok = v && (await copy(v));
+      const v = String(get() || '').trim(), ok = v && (await copy(v));
       b.classList.toggle('ok', !!ok); b.innerHTML = ok ? ICON_OK : ICON_COPY; b.append(tip);
       tip.textContent = !v ? 'Vacío' : ok ? '¡Copiado!' : 'No se pudo copiar'; b.classList.add('show');
       clearTimeout(t); t = setTimeout(() => { b.classList.remove('show', 'ok'); b.innerHTML = ICON_COPY; b.append(tip); }, 1400);
@@ -294,7 +295,14 @@
       const ph = el('td');
       if (p.photo) { const im = el('img', 'cd-thumb'); im.src = p.photo; im.alt = ''; ph.append(im); } else ph.append(el('span', 'cd-thumb cd-thumb-empty', '📦'));
       const sup = (p.suppliers || []).filter((s) => s.name).map((s) => s.name);
-      const pn = el('td'); pn.append(el('b', 'cd-pname', p.name || 'Sin nombre'), el('small', 'cd-pmeta', [p.dropi ? 'ID ' + p.dropi : '', p.market, sup.length ? sup[0] + (sup.length > 1 ? ` +${sup.length - 1}` : '') : '', ago(p.id)].filter(Boolean).join(' · ')));
+      // Nombre e ID Dropi con su botón de copiar al lado.
+      const pn = el('td'), nl = el('div', 'cd-pline'), ml = el('small', 'cd-pmeta cd-pline');
+      nl.append(el('b', 'cd-pname', p.name || 'Sin nombre'));
+      if (p.name) nl.append(copyBtn(() => p.name, 'Nombre del producto', 'inline'));
+      if (p.dropi) ml.append(el('span', null, 'ID ' + p.dropi), copyBtn(() => p.dropi, 'ID Dropi', 'inline'));
+      const rest = [p.market, sup.length ? sup[0] + (sup.length > 1 ? ` +${sup.length - 1}` : '') : '', ago(p.id)].filter(Boolean).join(' · ');
+      if (rest) ml.append(el('span', 'cd-prest', (p.dropi ? '· ' : '') + rest));
+      pn.append(nl, ml);
       const st = el('td'); st.append(r.status ? tag(r.status.tone, `${r.status.icon} ${r.status.t}`) : dash());
       const pr = el('td');
       if (r.util) {
