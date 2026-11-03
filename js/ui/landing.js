@@ -150,16 +150,20 @@
     },
   };
 
-  // Tabla "campo → valor" tal como aparecen en la plataforma (s.fields), con copiar en cada valor.
-  function fieldTable(fields, onCopy) {
+  // Tabla "campo → valor" tal como aparecen en la plataforma (s.fields: [campo, valor, valor a copiar si es otro]).
+  // Copiar va en cada valor, o solo en los campos de `only` (s.copyOnly) si el resto se escribe o elige en la plataforma.
+  function fieldTable(fields, onCopy, only) {
     const w = el('div', 'ld-tool mt-s');
     w.append(el('h4', null, 'Lo que pongo en cada campo'));
     const dl = el('dl', 'ld-fx ld-fields-map');
-    fields.forEach(([k, v]) => {
-      const dd = el('dd'), val = el('span', null, v);
-      const b = copyFeedback(button('ld-mini', '📋'), () => v, k, onCopy, '✓');
-      b.title = 'Copiar'; b.setAttribute('aria-label', 'Copiar ' + k);
-      dd.append(val, b);
+    fields.forEach(([k, v, raw]) => {
+      const dd = el('dd');
+      dd.append(el('span', null, v));
+      if (!only || only.includes(k)) {
+        const b = copyFeedback(button('ld-mini', '📋'), () => String(raw ?? v), k, onCopy, '✓');
+        b.title = 'Copiar'; b.setAttribute('aria-label', 'Copiar ' + k);
+        dd.append(b);
+      }
       dl.append(el('dt', null, k), dd);
     });
     w.append(dl);
@@ -180,7 +184,7 @@
     if (s.src) box.append(el('span', 'tag tv', s.src));
     if (s.p) box.append(seg('p', 'fl-p', s.p));
     if (s.warn) box.append(seg('div', 'note ny mt-s', ['⚠️ ', ...s.warn]));
-    if (s.fields) box.append(fieldTable(s.fields, on.copy));
+    if (s.fields) box.append(fieldTable(s.fields, on.copy, s.copyOnly));
 
     const list = el(s.ordered ? 'ol' : 'ul', 'ld-checks mt-s');
     s.items.forEach((it) => {
@@ -188,7 +192,16 @@
       const li = el('li'), b = button('ld-check' + (done ? ' on' : ''), null, () => on.toggle(k));
       b.setAttribute('aria-pressed', String(done));
       b.append(el('i', null, done ? '✓' : ''), seg('span', null, it.t));
-      li.append(b); list.append(li);
+      li.append(b);
+      // Desplegable opcional bajo la casilla: it.more = { t, groups: [[título, [valores]]] }.
+      if (it.more) {
+        const d = el('details', 'acc ld-more'), bd = el('div', 'bd');
+        d.append(el('summary', null, it.more.t));
+        it.more.groups.forEach(([h, vals]) => bd.append(seg('p', null, [{ b: h + ': ' }, vals.join(', ')])));
+        d.append(bd);
+        li.append(d);
+      }
+      list.append(li);
     });
     box.append(list);
     if (s.items.some((it) => ctx.done[ctx.key(s, it)])) {

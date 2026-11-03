@@ -148,7 +148,7 @@
         { k: 'test', t: ['Hago un ', { b: 'pedido de prueba' }, ': reviso que llegue a Shopify y a Dropi, y después lo ', { b: 'cancelo' }, ' para que no lo despachen.'] },
         { k: 'flash', t: ['El contador muestra su fecha y la anoté para cambiar la oferta ese día.'] },
       ],
-      tip: ['Juan: si la campaña tiene buen CPPI y no vende, el problema está en ', { b: 'la página, la oferta o el formulario' }, '. Se arregla dándole más confianza a la página y quitando la fricción. Con 200 visitas ya se puede juzgar la página.'] },
+      tip: ['NovaSociety: si la campaña tiene buen CPPI y no vende, el problema está en ', { b: 'la página, la oferta o el formulario' }, '. Se arregla dándole más confianza a la página y quitando la fricción. Con 200 visitas ya se puede juzgar la página.'] },
   ];
 
   const key = (s, it) => s.k + '.' + it.k;

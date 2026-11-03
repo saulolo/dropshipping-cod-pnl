@@ -812,6 +812,9 @@ details.acc .bd{padding:0 0 16px;color:var(--muted);font-size:14px}
 .ld-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
 .ld-checks{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:ld}
 .ld-check{all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;align-items:flex-start;gap:12px;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:14px;line-height:1.45;transition:border-color .2s,background .2s}
+.ld-more{margin-top:6px;padding:0 13px;font-size:13.5px}
+.ld-more summary{padding:8px 0}
+.ld-more .bd p{margin:0 0 6px;line-height:1.45}
 .ld-check:hover{border-color:var(--b)}
 .ld-check:focus-visible{outline:2px solid var(--b)}
 .ld-check i{width:22px;height:22px;flex-shrink:0;border-radius:7px;border:2px solid var(--line-2);display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:900;color:#fff;transition:background .2s,border-color .2s}
@@ -886,13 +889,9 @@ ol.ld-checks .ld-check::before{content:counter(ld);order:2;margin-left:auto;font
 .ma-soon{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:560px;margin:0 auto;padding:18px 0}
 .ma-soon p{margin:6px 0 0}
 .ma-soon-ic{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-size:30px;background:var(--card);border:1px dashed var(--line-2);margin-bottom:10px}
-.ma-node{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line);transition:border-color .25s,background .25s,box-shadow .25s,opacity .25s}
-.ma-node:hover{border-color:var(--b)}
-.ma-node:focus-visible{outline:2px solid var(--b)}
+.ma-node{box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
 .ma-node small{font-size:11.5px;color:var(--soft)}
 .ma-k{font-size:12px;font-weight:800;color:var(--muted)}
-.ma-node.on{border-color:var(--b);background:var(--b-bg);box-shadow:0 0 0 4px var(--b-bg)}
-.ma-node.on .ma-k{color:var(--b-ink)}
 .ma-camp-w{position:relative}
 .ma-camp{width:100%;align-items:center;text-align:center;padding:12px 110px}
 .ma-camp-copy{position:absolute;right:10px;top:50%;transform:translateY(-50%)}
@@ -910,7 +909,6 @@ ol.ld-checks .ld-check::before{content:counter(ld);order:2;margin-left:auto;font
 .ma-col .ma-ad::before{content:"";position:absolute;left:-12px;top:-10px;width:9px;height:calc(50% + 10px);border-left:2px solid var(--line-2);border-bottom:2px solid var(--line-2);border-bottom-left-radius:8px}
 .ma-arrow{font-size:22px;font-weight:900;color:var(--soft)}
 .ma-dupbox{align-self:stretch;justify-content:center;gap:6px;border-style:dashed}
-.ma-dupbox.on{border-style:solid}
 .ma-chips{display:flex;gap:6px;margin-top:4px}
 .ma-chips i{font-style:normal;min-width:30px;padding:4px 8px;border-radius:99px;text-align:center;font-size:12px;font-weight:800;background:var(--card-2);border:1px dashed var(--line-2);color:var(--muted)}
 .ma-chips i.ok{background:var(--g-bg);border:1px solid rgba(34,197,94,.45);color:var(--g-ink)}
@@ -925,9 +923,12 @@ ol.ld-checks .ld-check::before{content:counter(ld);order:2;margin-left:auto;font
 .ma-opt small{display:block;margin-top:4px;color:var(--soft);font-size:12px}
 .ma-opt p{margin:6px 0 0;font-size:13px;color:var(--muted)}
 /* URL de la product page */
-.ma-url{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.ma-msg{font-size:13px;font-weight:700}
-.ma-msg.ok{color:var(--g-ink)}.ma-msg.bad{color:var(--r-ink)}.ma-msg.empty{color:var(--soft)}
+.ma-slug{flex:1;min-width:0;display:flex;align-items:center;background:var(--bg-2);border:1px solid var(--line-2);border-radius:11px;transition:border-color .15s,box-shadow .15s}
+.ma-slug:focus-within{border-color:var(--b);box-shadow:0 0 0 3px var(--b-bg)}
+.ma-base{padding-left:13px;font-size:15.5px;font-weight:700;color:var(--soft);white-space:nowrap}
+.field .ma-slug input,.field .ma-slug input:focus{flex:1;min-width:0;background:none;border:0;box-shadow:none;padding-left:0}
+.ma-url{display:flex;align-items:center;gap:12px}
+.ma-url .ld-copy{flex:none}
 .ma-url .ld-copy:disabled{opacity:.45;pointer-events:none}
 .ma-hide{display:none}
 /* Duplicar y publicar */
@@ -951,7 +952,10 @@ ol.ld-checks .ld-check::before{content:counter(ld);order:2;margin-left:auto;font
   .ma-camp{padding:12px 12px 52px}
   .ma-camp-copy{top:auto;bottom:10px;right:50%;transform:translateX(50%)}
   .ma-sum,.ma-vs{grid-template-columns:1fr}
-  .ma-url{flex-wrap:wrap}
+  .ma-url,.ma-slug{flex-wrap:wrap}
+  .ma-slug{flex-basis:100%}
+  .ma-base{padding-top:8px;font-size:13px;white-space:normal;word-break:break-all}
+  .field .ma-slug input,.field .ma-slug input:focus{flex-basis:100%;padding-left:13px}
 }
 
 /* Alias de los tokens que usa el tablero P&L (components.css, gráficas en js/ui y report.css). */

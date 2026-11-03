@@ -9,31 +9,24 @@
   const fmt = (v) => PYL.core.format.fmt(v, 'cop');
 
   // ---------- Mapa de la campaña ----------
-  // Solo se dibuja el conjunto 1 con su anuncio: los otros son copias, y el bloque "Duplico" muestra cuáles ya hice.
-  // level = nivel del paso abierto ('camp' | 'set' | 'ad' | 'all' | null); copies[n] = ya dupliqué el conjunto n.
-  // onPick(level) salta al paso de ese nivel; onCopy(texto, etiqueta) copia el nombre de la campaña.
-  function map(node, A, level, copies, onPick, onCopy) {
+  // Solo informativo: se dibuja el conjunto 1 con su anuncio; los otros son copias, y el bloque "Duplico" muestra cuáles ya hice.
+  // copies[n] = ya dupliqué el conjunto n; onCopy(texto, etiqueta) copia el nombre de la campaña.
+  function map(node, A, copies, onCopy) {
     node.textContent = '';
-    const lit = (lv) => level === 'all' || level === lv;
-    const nodeBtn = (lv, cls, kids) => {
-      const b = button('ma-node ' + cls + (lit(lv) ? ' on' : ''), null, () => onPick(lv));
-      b.append(...kids);
-      b.title = 'Ver el paso de este nivel';
-      return b;
-    };
+    const box = (cls, kids) => { const d = el('div', 'ma-node ' + cls); d.append(...kids); return d; };
     const name = out('cname', 'ma-name');
     const camp = el('div', 'ma-camp-w');
     const cp = L.copyFeedback(button('btn ghost sm ld-copy ma-camp-copy', '📋 Copiar'), () => name.textContent, 'Nombre de la campaña', onCopy, '✓ Copiado');
-    camp.append(nodeBtn('camp', 'ma-camp', [el('span', 'ma-k', '📁 Campaña'), name, el('small', null, 'Ventas · Subasta · ABO')]), cp);
+    camp.append(box('ma-camp', [el('span', 'ma-k', '📁 Campaña'), name, el('small', null, 'Ventas · Subasta · ABO')]), cp);
 
     const sets = el('div', 'ma-sets');
     const col = el('div', 'ma-col ma-stack');
     col.append(
-      nodeBtn('set', 'ma-set', [el('span', 'ma-k', '▦ Conjunto 1'), el('small', null, `${fmt(A.daily)} al día`)]),
-      nodeBtn('ad', 'ma-ad', [el('span', 'ma-k', '▭ Anuncio 1'), el('small', null, '🎬 Video 1')]),
+      box('ma-set', [el('span', 'ma-k', '▦ Conjunto 1'), el('small', null, `${fmt(A.daily)} al día`)]),
+      box('ma-ad', [el('span', 'ma-k', '▭ Anuncio 1'), el('small', null, '🎬 Video 1')]),
     );
     const n = A.sets - 1, made = Object.values(copies).filter(Boolean).length;
-    const dup = nodeBtn('all', 'ma-dupbox', [
+    const dup = box('ma-dupbox', [
       el('span', 'ma-k', `⧉ Lo duplico ${n} veces`),
       el('small', null, 'Mismo presupuesto, calendario y textos. Solo cambio el nombre y el video.'),
     ]);
@@ -53,20 +46,24 @@
 
   // ---------- Herramientas de los pasos (se suman a las de ui.landing en stepDetail) ----------
   const TOOLS = {
-    url: (on, st) => {
+    // URL de la product page: la parte fija se muestra; solo se edita y se copia el identificador (primer nombre del producto).
+    url: (on, st, v) => {
       const w = el('div', 'ld-tool');
       w.append(el('h4', null, 'URL de la product page'));
-      w.append(input('url', 'URL del producto', st.url, on, { ph: `https://${PYL.core.ads.ADS.store}/products/magnesium` }));
-      const r = el('div', 'ma-url mt-s'), msg = out('urlmsg', 'ma-msg'), v = out('url', 'ma-hide');
-      r.append(msg, L.copyBtn(v, 'URL de la product page', on.copy), v);
-      w.append(r);
+      w.append(seg('p', 'note ny ma-need', ['Pongo el ', { b: 'nombre del producto' }, ' arriba, en "Producto que estoy montando".']));
+      const f = input('slug', 'URL del producto', v.slug, on, { ph: v.slugAuto || 'magnesium', hint: 'Copiar trae solo esta última parte.' });
+      const x = f.querySelector('input'), r = el('div', 'ma-url'), g = el('div', 'ma-slug'), val = out('slug', 'ma-hide');
+      x.replaceWith(r);
+      g.append(el('span', 'ma-base', PYL.core.ads.URL_BASE), x);
+      r.append(g, L.copyBtn(val, 'URL de la product page', on.copy), val);
+      w.append(f);
       return w;
     },
     name: (on) => {
       const w = el('div', 'ld-tool');
       w.append(el('h4', null, 'Nombre de la campaña'));
       w.append(seg('p', 'note ny ma-need', ['Pongo el ', { b: 'nombre del producto' }, ' arriba, en "Producto que estoy montando".']));
-      w.append(valRow('Nombre de la campaña', 'cname', on.copy, 'día y mes de mañana (cuando arranca) - producto en mayúsculas'));
+      w.append(valRow('Nombre de la campaña', 'cname', on.copy, 'día y mes de mañana (cuando arranca) - primer nombre del producto en mayúsculas'));
       return w;
     },
     abo: () => {
@@ -88,7 +85,7 @@
     start: (on) => {
       const w = el('div', 'ld-tool');
       w.append(el('h4', null, 'Presupuesto y calendario'));
-      w.append(valRow('Presupuesto diario', 'daily', on.copy, 'por conjunto'), valRow('Fecha de inicio', 'start', on.copy, 'el día siguiente'), valRow('Hora', 'hour', on.copy));
+      w.append(valRow('Presupuesto diario', 'daily', on.copy, 'por conjunto'));
       return w;
     },
     dup: (on, st) => {
@@ -123,15 +120,13 @@
   // Pinta lo derivado (v = core.ads.adsView) en los nodos [data-o] de la guía de Meta.
   function outputs(root, v) {
     const O = {
-      cname: [v.name], daily: [fmt(v.daily), v.daily], start: [v.start.label], hour: [v.start.hour],
-      url: [v.url, v.url], urlmsg: [v.urlCheck.msg],
+      cname: [v.name], daily: [fmt(v.daily), v.daily], slug: [v.slug, v.slug],
     };
     root.querySelectorAll('[data-o]').forEach((n) => {
       const [t, raw] = O[n.dataset.o] || ['']; n.textContent = t;
       if (raw != null) n.dataset.raw = String(raw); else delete n.dataset.raw;
     });
-    root.querySelectorAll('.ma-msg').forEach((n) => { n.className = 'ma-msg ' + v.urlCheck.state; });
-    root.querySelectorAll('.ma-url .ld-copy').forEach((b) => { b.disabled = v.urlCheck.state !== 'ok'; });
+    root.querySelectorAll('.ma-url .ld-copy').forEach((b) => { b.disabled = !v.slug; });
     root.querySelectorAll('.ma-need').forEach((n) => { n.hidden = !!v.product; });
   }
 

@@ -16,7 +16,8 @@
     part: PARTS.includes(saved.part) ? saved.part : 'shop', // sub-pestaña abierta
     strat: C.strategy(saved.strat).k,                       // estrategia abierta ('abo' | 'cbo')
     plans,                                                  // { abo: { active, done: { 'paso.casilla': true } } }
-    url: saved.url || '',                                   // URL de la product page (sirve para cualquier estrategia)
+    slug: saved.slug || '',                                 // identificador de URL escrito a mano; vacío = primer nombre del producto
+    slugFor: saved.slugFor || '',                           // producto para el que se escribió (otro producto → vuelve al automático)
   });
   const plan = () => (S.plans[S.strat] ??= { active: 0, done: {} });
 
@@ -44,17 +45,17 @@
     $('#ma-map').hidden = !st.map;
     if (st.map) {
       const copies = {}; for (let n = 2; n <= C.ADS.sets; n++) copies[n] = !!P.done['dup.s' + n];
-      U.map($('#ma-map'), C.ADS, s.level, copies, (lv) => { const j = C.stepOf(lv, steps); if (j >= 0) select(j); }, copy);
+      U.map($('#ma-map'), C.ADS, copies, copy);
     }
     UL.progress($('#ma-prog'), prog, reset);
     UL.stepList($('#ma-steps'), steps, prog, i, select);
     UL.stepDetail($('#ma-step'), s, i, total, {
-      done: P.done, key: L.key, fill: (t) => L.fill(t, { producto: prod().name, precio: prod().price }), st: { url: S.url, done: P.done }, v: view(),
+      done: P.done, key: L.key, fill: (t) => L.fill(t, { producto: prod().name, precio: prod().price }), st: { done: P.done }, v: view(),
       tools: U.TOOLS, levels: C.LEVELS, last: { label: 'Leer el testeo en el Simulador →', view: 'sim' },
     }, {
       toggle: (k) => { P.done[k] = !P.done[k]; persist(); render(); },
       clearStep: () => { s.items.forEach((it) => { delete P.done[L.key(s, it)]; }); persist(); render(); },
-      field: (k, val) => { S[k] = val; persist(); refresh(); },
+      field: (k, val) => { S[k] = val; S.slugFor = prod().name || ''; persist(); refresh(); },
       copy,
       prev: () => select(i - 1),
       next: () => select(i + 1),
@@ -65,7 +66,7 @@
 
   async function reset() {
     const name = C.strategy(S.strat).k.toUpperCase();
-    const r = await PYL.ui.feedback.ask('Nueva campaña', `Desmarco todas las casillas del paso a paso ${name}. La URL se queda.`, [{ r: 'ok', label: 'Empezar de cero' }]);
+    const r = await PYL.ui.feedback.ask('Nueva campaña', `Desmarco todas las casillas del paso a paso ${name}.`, [{ r: 'ok', label: 'Empezar de cero' }]);
     if (r !== 'ok') return;
     S.plans[S.strat] = { active: 0, done: {} };
     persist(); render();
@@ -80,8 +81,12 @@
   }
   document.querySelectorAll('#d-parts [data-part]').forEach((b) => b.addEventListener('click', () => { showPart(b.dataset.part); persist(); }));
 
-  // El nombre o el precio cambiaron en "Producto que estoy montando": cambian el nombre de la campaña y el prompt.
-  document.addEventListener('landing:prod', render);
+  // El nombre o el precio cambiaron en "Producto que estoy montando": cambian el nombre de la campaña, la URL y el prompt.
+  // Con otro producto, el identificador escrito a mano ya no aplica.
+  document.addEventListener('landing:prod', () => {
+    if (S.slug && S.slugFor !== (prod().name || '')) { S.slug = ''; persist(); }
+    render();
+  });
 
   showPart(S.part);
   render();
