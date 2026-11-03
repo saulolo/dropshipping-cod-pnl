@@ -210,10 +210,10 @@
     };
   }
 
-  // Avance: casillas marcadas de cada paso y del total.
-  function progress(done) {
+  // Avance: casillas marcadas de cada paso y del total (de STEPS o de otra guía con el mismo formato, ej. core.ads).
+  function progress(done, list = STEPS) {
     const d = done || {};
-    const steps = STEPS.map((s) => { const n = s.items.filter((it) => d[key(s, it)]).length; return { k: s.k, done: n, total: s.items.length, complete: n === s.items.length }; });
+    const steps = list.map((s) => { const n = s.items.filter((it) => d[key(s, it)]).length; return { k: s.k, done: n, total: s.items.length, complete: n === s.items.length }; });
     return { steps, done: steps.reduce((a, s) => a + s.done, 0), total: steps.reduce((a, s) => a + s.total, 0), stepsDone: steps.filter((s) => s.complete).length };
   }
 

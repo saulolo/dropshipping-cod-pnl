@@ -17,8 +17,12 @@
     unit: saved.unit || '', gift: saved.gift || '', warranty: saved.warranty || String(C.LANDING.warranty),
   });
 
-  const persist = () => { if (!store.save(S)) toast('No pude guardar en el navegador.', 'error'); };
-  const root = $('#v-desarrollo');
+  // Avisa a la guía de Meta Ads (app/ads.js), que usa el nombre y el precio del producto.
+  const persist = () => {
+    if (!store.save(S)) toast('No pude guardar en el navegador.', 'error');
+    document.dispatchEvent(new CustomEvent('landing:prod'));
+  };
+  const root = $('#d-shop');
   const MONEY = ['cost', 'price'];
   const field = (k) => $('#d-f-' + k);
   const money = (v) => (v ? Number(v).toLocaleString('es-CO') : '');
@@ -40,7 +44,8 @@
       toggle: (k) => { S.done[k] = !S.done[k]; persist(); render(); },
       clearStep: () => { C.STEPS[i].items.forEach((it) => { delete S.done[C.key(C.STEPS[i], it)]; }); persist(); render(); },
       field: (k, val) => { S[k] = val; persist(); refresh(); },
-      copy: async (text, label) => { const ok = await PYL.ui.dom.copy(text); toast(ok ? `Copié: ${label}.` : 'No pude copiar: lo selecciono y copio a mano.', ok ? 'ok' : 'error'); },
+      // El botón muestra ✓ al copiar; solo el error va como mensaje.
+      copy: async (text) => { const ok = await PYL.ui.dom.copy(text); if (!ok) toast('No pude copiar: lo selecciono y copio a mano.', 'error'); return ok; },
       pull: () => pull(true),
       prev: () => select(i - 1),
       next: () => select(i + 1),

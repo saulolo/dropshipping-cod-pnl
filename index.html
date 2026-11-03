@@ -37,8 +37,8 @@
     <nav class="tabs" id="tabs" aria-label="Módulos">
       <button data-v="dash" aria-current="page">Inicio</button>
       <button data-v="buscar">Buscar producto</button>
-      <button data-v="desarrollo">Desarrollo</button>
       <button data-v="costeo">Costeo</button>
+      <button data-v="desarrollo">Desarrollo</button>
       <button data-v="metricas">Hard Metrics</button>
       <button data-v="sim">Simulador</button>
       <button data-v="escalera">Escalera</button>
@@ -318,14 +318,14 @@
     <div>
       <div class="eyebrow">Después de buscar · antes de pautar</div>
       <h1>Desarrollo del producto</h1>
-      <p class="lead">Monto la página del producto en Shopify, paso a paso y en orden. Marco cada casilla al terminarla: se guarda en este navegador.</p>
+      <p class="lead">Monto la página del producto en Shopify y creo su campaña, paso a paso y en orden. Marco cada casilla al terminarla: se guarda en este navegador.</p>
     </div>
     <span class="tag tv">Criterio NovaSociety</span>
   </div>
 
-  <div class="seg" role="group" aria-label="Parte del desarrollo">
-    <button type="button" aria-pressed="true">🛍️ Landing en Shopify</button>
-    <button type="button" aria-pressed="false" disabled title="Pronto">Meta Ads · pronto</button>
+  <div class="seg" id="d-parts" role="group" aria-label="Parte del desarrollo">
+    <button type="button" data-part="shop" aria-pressed="true">🛍️ Landing en Shopify</button>
+    <button type="button" data-part="meta" aria-pressed="false">📣 Meta Ads</button>
     <button type="button" aria-pressed="false" disabled title="Pronto">TikTok Ads · pronto</button>
   </div>
 
@@ -344,7 +344,7 @@
       <div class="field"><label for="d-f-price">Precio de venta</label><input id="d-f-price" type="text" inputmode="numeric" placeholder="0"><span class="hint">El "Véndelo a" del Costeo.</span></div>    </div>
   </div>
 
-  <div class="card mt b-flow-card">
+  <div class="card mt b-flow-card" id="d-shop">
     <div class="row between">
       <div><h2>Landing en Shopify</h2><p class="muted b-sub">Toco un paso para ver qué hago, copiar los prompts y los datos que pego en cada app.</p></div>
     </div>
@@ -353,6 +353,24 @@
       <ol class="fl" id="d-steps"></ol>
       <div class="fl-side" id="d-step" aria-live="polite"></div>
     </div>
+  </div>
+
+  <div class="card mt b-flow-card" id="ma-card" hidden>
+    <div class="row between">
+      <div><h2>Campaña en Meta Ads</h2><p class="muted b-sub">Elijo la estrategia con la que voy a montar la campaña y sigo su paso a paso.</p></div>
+    </div>
+    <div class="st-tabs mt" id="ma-strats" role="group" aria-label="Estrategia de la campaña"></div>
+    <div class="st-panel" id="ma-plan">
+      <h3 class="st-h" id="ma-h"></h3>
+      <p class="muted b-sub" id="ma-sub"></p>
+      <div class="ma-map mt" id="ma-map" aria-label="Mapa de la campaña"></div>
+      <div class="b-prog mt" id="ma-prog"></div>
+      <div class="b-flow mt">
+        <ol class="fl" id="ma-steps"></ol>
+        <div class="fl-side" id="ma-step" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="st-panel" id="ma-soon" hidden></div>
   </div>
 </section>
 
@@ -1013,6 +1031,7 @@
 <script src="js/core/excel.js"></script>
 <script src="js/core/search.js"></script>
 <script src="js/core/landing.js"></script>
+<script src="js/core/ads.js"></script>
 <!-- Services: archivos y almacenamiento del navegador -->
 <script src="js/services/storage.js"></script>
 <script src="js/services/files.js"></script>
@@ -1037,6 +1056,7 @@
 <script src="js/ui/search.js"></script>
 <script src="js/ui/candidate.js"></script>
 <script src="js/ui/landing.js"></script>
+<script src="js/ui/ads.js"></script>
 <!-- App: estado, casos de uso y arranque (main.js va al final) -->
 <script src="js/app/state.js"></script>
 <script src="js/app/filters.js"></script>
@@ -1045,6 +1065,7 @@
 <script src="js/app/report.js"></script>
 <script src="js/app/search.js"></script>
 <script src="js/app/landing.js"></script>
+<script src="js/app/ads.js"></script>
 <script src="js/app/trainer.js"></script>
 <script src="js/app/main.js"></script>
 </body>

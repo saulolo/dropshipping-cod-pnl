@@ -24,8 +24,13 @@ cuánto ganaste, por qué, y qué palanca mover para ganar más.
 
 ## 📚 Contenido
 
+- [🧩 Las partes de la app](#-las-partes-de-la-app)
 - [✨ Qué hace en 30 segundos](#-qué-hace-en-30-segundos)
 - [🚀 Empieza en 3 pasos](#-empieza-en-3-pasos)
+- [🔎 Buscar producto](#-buscar-producto)
+- [🛍️ Desarrollo de la landing](#️-desarrollo-de-la-landing)
+- [🎓 Entrenador de métricas](#-entrenador-de-métricas)
+- [🎨 Temas](#-temas)
 - [📂 Los archivos que necesitas](#-los-archivos-que-necesitas)
 - [🧭 Recorrido por el tablero](#-recorrido-por-el-tablero)
 - [🧮 Cómo se calcula tu utilidad](#-cómo-se-calcula-tu-utilidad)
@@ -40,7 +45,27 @@ cuánto ganaste, por qué, y qué palanca mover para ganar más.
 
 ---
 
+## 🧩 Las partes de la app
+
+Todo vive en una sola página (`index.html`). Las pestañas de la barra superior siguen el orden en que trabajo un producto:
+
+| Pestaña | Para qué sirve |
+|---|---|
+| 🏠 **Inicio** | Resumen del método de Juan Herrera (NovaSociety) y la cadena CPM → CPC → CPPI → CPA. |
+| 🔎 **Buscar producto** | Encontrar y evaluar un producto antes de gastar: flujograma de DropKiller, mi candidato con score, bitácora y estrategias de búsqueda. |
+| 🧮 **Costeo** | Cuánto cobrar, cuánto me queda por pedido entregado y mi CPA máximo. |
+| 🛍️ **Desarrollo** | Montar la landing del producto en Shopify y crear su campaña en Meta Ads, paso a paso. |
+| 📏 **Hard Metrics** | Rangos de Meta Ads y TikTok Ads, con semáforo para mis datos. |
+| 🧪 **Simulador** | Protocolo de testeo 20K / 30K / 40K: me dice si apago, sostengo o sigo. |
+| 🪜 **Escalera** | Los 15 escalones para escalar (+20% de presupuesto cada uno). |
+| 🎬 **Creativos** | Pipeline y cadencia de creativos, y cuándo el problema es el creativo. |
+| 💸 **Tablero P&L** | La utilidad real contra entrega cruzando Dropi y Meta Ads (lo que explica la mayor parte de este documento). |
+
+---
+
 ## ✨ Qué hace en 30 segundos
+
+*Esta sección y las siguientes, hasta "Guardar y compartir", son del **Tablero P&L**.*
 
 En contra entrega (COD) lo que vende Meta **no** es lo que entra a tu bolsillo: hay cancelaciones, devoluciones, fletes de ida y vuelta, y pedidos que siguen en ruta. Esta app hace la cuenta completa por ti.
 
@@ -64,12 +89,86 @@ En contra entrega (COD) lo que vende Meta **no** es lo que entra a tu bolsillo: 
 
 **1. Abre la app** → haz **doble clic** en `index.html`. Se abre en tu navegador (recomendado: **Chrome** o **Edge**).
 
-**2. Arrastra tus reportes** → suelta los archivos de Dropi y Meta en las zonas de carga. No importa en qué cuadro los sueltes: la app reconoce cada archivo por su contenido y lo pone en su lugar.
+**2. Elige la pestaña** → para el P&L, abre **Tablero P&L**. Las demás pestañas no necesitan archivos.
 
-**3. Lee tu tablero** → elige producto y fechas arriba. Todo se recalcula al instante.
+**3. Arrastra tus reportes** → suelta los archivos de Dropi y Meta en las zonas de carga. No importa en qué cuadro los sueltes: la app reconoce cada archivo por su contenido y lo pone en su lugar.
+
+**4. Lee tu tablero** → elige producto y fechas arriba. Todo se recalcula al instante.
 
 > [!NOTE]
 > La primera vez necesitas internet: la app descarga la librería que lee archivos Excel y las tipografías. Tus datos nunca se envían a ningún lado.
+
+---
+
+## 🔎 Buscar producto
+
+Módulo 4 de NovaSociety más el método VDO de DropKiller. La idea: no preguntarme "¿qué producto vendo?", sino "¿qué problema le arde a la gente?", y dejar que los datos decidan. La ruta de arriba lleva a cada parte:
+
+| # | Parte | Qué hago ahí |
+|:-:|---|---|
+| 1 | **Flujograma DropKiller** | 7 pasos con sus filtros (ventas totales 100–2.000, 7 días 10–100, 30 días 100–500, stock mínimo 80…). Cada rombo es una decisión: si la respuesta es no, descarto. Marco los pasos hechos. |
+| 2 | **Mi candidato** | Formulario con foto, ventas, proveedores, anunciantes y costos. Calcula solo el **score /8**, la **utilidad por entrega** y el semáforo **¿Lo testeo?** del método VDO. **Costear →** pasa el producto a la pestaña Costeo. |
+| 3 | **Bitácora** | Los productos que voy evaluando. Lápiz = editar, papelera = eliminar, botones para copiar nombre e ID de Dropi. Filtros, búsqueda y vista de estadísticas. |
+| 4 | **¿Es un producto ganador?** | 6 características (2 obligatorias). Las marco y se guardan con el candidato. |
+| 5 | **Estrategias de búsqueda** | Dos caminos para encontrar el producto (ver abajo). |
+| 6 | **Costeo →** | Salta a la pestaña Costeo con los datos del candidato. |
+
+### 🧭 Estrategias de búsqueda
+
+Elijo una de las dos tarjetas de arriba; la app recuerda cuál dejé abierta.
+
+**🎯 Estrategia VDO**: parto de productos que ya están en validación.
+
+- **V**alidación: 100 a 2.000 ventas totales, sumando todos los proveedores.
+- **D**emanda: menos de 5 proveedores (máximo 10).
+- **O**ferta: menos de 5 anunciantes activos.
+- Además: la **pirámide del producto ganador** (producto y oferta 50%, creativos 30%, landing 20%) y el **ciclo de vida** del producto (nuevo, validación, escalado, saturado, quemado).
+
+**🏭 Estrategia por proveedor**: parto de proveedores confiables y busco productos que casi nadie vende.
+
+```mermaid
+flowchart LR
+    A["🏭 Filtrar por proveedor<br/>Botania · Nibresma<br/>Bodega de Belleza Int<br/>+ Goldbox (aliado)"] --> B["🔎 Analizar productos<br/>0 ventas de interés, o<br/>&lt; 50 en 7 días y &lt; 500 en 30 días<br/>15 a 20 productos"]
+    B --> C["🌎 Validar en otros países<br/>FastMoss"]
+    C --> D["🧪 Testear<br/>DropKiller por nombre:<br/>proveedores, anuncios,<br/>creativos y product page"]
+```
+
+En **FastMoss** (enlace directo a [fastmoss.com/es](https://www.fastmoss.com/es) desde la app) sigo 4 pasos: país objetivo → volumen de ventas → competencia local → anuncios y creadores. Si el producto pasa, lo anoto en **Mi candidato** y lo costeo antes de testear con los cortes 20K / 30K / 40K.
+
+> [!NOTE]
+> Los números de la estrategia por proveedor (50 / 500 / 15–20) son distintos a los del filtro VDO (máximo 100 en 7 días) a propósito: son métodos diferentes.
+
+---
+
+## 🛍️ Desarrollo de la landing
+
+Módulo 5 de NovaSociety: lo que hago a mano para montar el producto en Shopify. La descripción en HTML la entrega la skill de Claude **"Mi Página Vida Nova"**; la pestaña guía el resto, paso a paso y con casillas que se guardan:
+
+- Prompts para el título y las imágenes; subir imágenes a *Contenido → Archivos* y pegar sus URL en el HTML.
+- Precios, identificador de URL, Dropify e inventario.
+- **Releasit** con ofertas de 1, 2 y 3 unidades (descuentos de 0%, 20% y 30%).
+- Títulos y etiquetas con unidad, regalo y garantía; prompts de miniaturas; TrustWill.
+- **Traer de mi candidato** llena nombre, ID de Dropi y precios desde Buscar producto.
+- **Meta Ads:** paso a paso según la estrategia que voy a montar (selector ABO / CBO; CBO aparece como "pronto"). ABO: campaña de testeo (1 campaña → 4 conjuntos → 1 anuncio con su video en cada uno, 30.000 al día por conjunto). Mapa interactivo de la campaña, tabla "campo → valor" en cada paso, nombre de la campaña (día mes - producto), fecha de inicio (mañana, 5:00 a. m.), revisión de la URL de la product page y prompt de 3 copies, títulos y descripciones.
+- TikTok Ads aparece como "pronto".
+
+---
+
+## 🎓 Entrenador de métricas
+
+Las pestañas Inicio, Costeo, Hard Metrics, Simulador, Escalera y Creativos siguen el método de Juan Herrera:
+
+- **Costeo:** el precio sale del margen que quiero, redondeado a x4.900 / x9.900 (igual que el MCP de NovaSociety). Calcula el CPA máximo, la zona de escala y la zona de apagar. Con **Poner este precio en mi candidato** el precio vuelve a Buscar producto.
+- **Hard Metrics:** rangos de CPM, CPPI y CPA para Meta y TikTok; escribo mi dato y el semáforo me dice qué hacer.
+- **Simulador:** reglas del testeo en 20K / 30K / 40K, con historial de evaluaciones.
+- **Escalera:** 15 escalones de +20%, decididos con el CPA de los últimos 3 días.
+- **Creativos:** pipeline, meta semanal y diagnóstico de si el problema es el creativo.
+
+---
+
+## 🎨 Temas
+
+El botón de tema de la barra superior cambia los colores de toda la app: **Dark** (por defecto), **Light**, **Gold** (negro y amarillo NovaSociety), **Ember**, **IntelliJ Dark**, **IntelliJ Gold** y **Nebula**. La app recuerda el que elegí.
 
 ---
 
@@ -298,8 +397,8 @@ Pulsa **📄 Descargar informe PDF** (el botón morado arriba a la derecha, o *I
 ## 🔒 Privacidad
 
 - 🖥️ Todo se procesa **dentro de tu navegador**. Tus reportes no se suben a ningún servidor.
-- 💾 Lo único que la app guarda en tu navegador son tus asignaciones campaña → producto y el acceso a tu archivo consolidado.
-- 🌐 Solo usa internet para descargar la librería de Excel y las tipografías.
+- 💾 Lo que la app guarda en tu navegador: asignaciones campaña → producto, acceso a tu archivo consolidado, la bitácora de candidatos (con sus fotos) y los pasos marcados de Buscar producto y Desarrollo, lo que escribes en el entrenador y el tema elegido. Si borras los datos del navegador, eso se pierde.
+- 🌐 Solo usa internet para descargar la librería de Excel y las tipografías, y cuando abres un enlace externo (por ejemplo, FastMoss).
 
 ---
 
@@ -360,9 +459,13 @@ Cada capa solo usa las que están por encima en esta lista:
 img/
   autor.png           Logo del autor (pie de la app y del informe)
 
+docs/referencia/
+  novasociety-metricas-v2.html   Prototipo original del entrenador (referencia, no se carga)
+
 css/
-  base.css            Tokens de diseño, base, tarjetas, filtros y botones
-  components.css      KPIs, gráficas, embudo, diagnósticos, simulador, tablas, avisos, impresión
+  base.css            Sistema de diseño: tokens, barra superior, tarjetas, botones, campos, tablas,
+                      módulos del entrenador, Buscar producto, Desarrollo y los temas (al final)
+  components.css      Solo lo propio del Tablero P&L (acotado a #v-pyl)
   report.css          Informe PDF: documento claro en A4, visible solo al imprimir
 
 js/
@@ -376,11 +479,14 @@ js/
     diagnostics.js    Benchmarks del embudo y la cascada, historia ejecutiva, veredicto, semáforos KPI
     insights.js       Periodo anterior, semanas, proyección, simulador, unit economics, plan de acción
     excel.js          Plantilla y escritura del consolidado de 20 columnas
-    search.js         Buscar producto: umbrales VDO/DropKiller, ciclo de vida, flujograma, evaluación de candidatos
+    search.js         Buscar producto: LIMITS (única fuente de los umbrales), ciclo de vida, flujograma,
+                      estrategias de búsqueda (VDO y por proveedor), producto ganador, score, costeo y bitácora
+    landing.js        Desarrollo: pasos, prompts y números (LANDING) de la landing en Shopify
+    ads.js            Desarrollo → Meta Ads: estrategias (AD_STRATEGIES), pasos ABO (ABO_STEPS) y números (ADS)
     index.js          Solo Node: exporta todo el núcleo para pruebas
 
   services/           Adaptadores a APIs del navegador
-    storage.js        localStorage (asignaciones, búsqueda de productos) e IndexedDB (archivo vinculado)
+    storage.js        localStorage (asignaciones, búsqueda de productos, landing, Meta Ads) e IndexedDB (archivo vinculado)
     files.js          Lectura de .xlsx/.csv, selector y descarga
     consolidado.js    Archivo consolidado con File System Access (Chrome/Edge)
 
@@ -388,16 +494,23 @@ js/
     dom.js, tooltip.js, feedback.js, upload-zones.js, notices.js, trend.js,
     summary.js, cascade.js, funnel.js, diagnosis-panel.js, unit-table.js,
     simulator.js, products-table.js, campaigns-table.js, presets.js, report.js,
-    search.js         Pestaña Buscar producto (flujograma, semáforo VDO, fichas)
+    search.js         Pestaña Buscar producto (flujograma, semáforo VDO, producto ganador, pirámide,
+                      selector de estrategias y fases de la estrategia por proveedor, fichas)
     candidate.js      Evaluador de candidatos: formulario con foto, score /8, utilidad, bitácora y estadísticas
+    landing.js        Pestaña Desarrollo (pasos de la landing, prompts para copiar, progreso)
+    ads.js            Desarrollo → Meta Ads: mapa de la campaña y herramientas de sus pasos
 
   app/                Estado y casos de uso; conecta core, services y ui
+    theme.js          Tema (data-theme en <html>); se carga en <head>, antes de pintar
+    trainer.js        Entrenador de métricas y navegación entre pestañas (fase 1: copiado del prototipo)
     state.js          Estado único de la aplicación
     filters.js        Filtros, selección de producto, periodos rápidos
     data-loader.js    Carga de reportes y asignación campaña → producto
     save.js           Guardar en el consolidado, exportar, cambiar archivo
     report.js         Reúne el cálculo actual y genera el informe PDF
     search.js         Estado de Buscar producto (app.state.search) y paso del candidato al Costeo
+    landing.js        Estado de Desarrollo (app.state.landing) y "Traer de mi candidato"
+    ads.js            Estado de Meta Ads (app.state.ads) y sub-pestañas de Desarrollo
     main.js           render() y arranque. Va siempre de último.
 ```
 
@@ -406,7 +519,9 @@ js/
 - **Sin `import`/`export`.** Los navegadores bloquean los ES modules en `file://`. Cada archivo es un IIFE que publica su API en el namespace global `PYL` (`PYL.core.pnl`, `PYL.ui.funnel`, etc.).
 - **El orden importa.** `index.html` carga los scripts en el orden de las capas. Un archivo nuevo va en su capa, antes de los que lo usan.
 - **Solo la capa `app` modifica el estado.** Los componentes de `ui` reciben datos y callbacks (`onSelect`, `onAssign`).
-- **Los diagnósticos devuelven datos, no HTML.** El texto con negritas se representa como segmentos: un string es texto plano y `{ b: '...' }` va en negrita. `ui/dom.js` (`rich`) los pinta.
+- **Los diagnósticos devuelven datos, no HTML.** El texto con formato se representa como segmentos: un string es texto plano, `{ b: '...' }` va en negrita y `{ a: '...', href }` es un enlace que abre en pestaña nueva. `ui/dom.js` (`rich`) los pinta.
+- **Estilos solo en los `.css`.** Nada de `<style>` en `index.html`. Los colores de marca van con tokens (`var(--b)`, `rgba(var(--b-rgb),…)`), nunca escritos a mano.
+- **IDs únicos en toda la página** y archivos con finales de línea LF.
 
 ### Pruebas en Node
 
@@ -414,7 +529,11 @@ js/
 const core = require('./js/core/index.js');
 const dropi = core.buildDropi(core.parseCSV(texto));
 const a = core.aggregate(dropi.lines, [], { prod: '__all', from: null, to: null, iva: true, adsOverride: null }, null);
+core.evaluate({ salesTotal: 800, prov: 3, sales7: 40 });   // semáforo VDO de un candidato
+core.BY_PROVIDER.steps.map((s) => s.t);                    // fases de la estrategia por proveedor
 ```
+
+No hay runner de pruebas. Para revisar el pintado (capas `ui` y `app`) se carga `index.html` en **jsdom** y se simulan clics; `node --check archivo.js` revisa la sintaxis.
 
 </details>
 
@@ -479,10 +598,10 @@ Agradezco sinceramente el tiempo dedicado a revisar este proyecto. Valoro cualqu
 |:---|:---|
 | **Título** | Dropshipping COD · Calculadora de Utilidad Real |
 | **Autor** | Saul Echeverri |
-| **Versión** | 1.0.0 |
+| **Versión** | 1.1.0 |
 | **Fecha de creación** | 12 de octubre de 2026 |
-| **Última actualización** | 13 de octubre de 2026 |
-| **Notas adicionales** | Aplicación web local (HTML, CSS y JavaScript sin dependencias de compilación) que cruza los reportes de Dropi y Meta Ads para calcular la utilidad real de una tienda contra entrega. |
+| **Última actualización** | 2 de noviembre de 2026 |
+| **Notas adicionales** | Aplicación web local (HTML, CSS y JavaScript sin dependencias de compilación) con el método de NovaSociety: buscar y evaluar productos, montar la landing en Shopify, entrenador de métricas y el P&L real contra entrega cruzando Dropi y Meta Ads. |
 
 ---
 

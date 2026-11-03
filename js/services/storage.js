@@ -24,6 +24,13 @@
     save: (s) => { try { localStorage.setItem(LANDING_KEY, JSON.stringify(s)); return true; } catch { return false; } },
   };
 
+  // Desarrollo → Meta Ads: sub-pestaña abierta, paso abierto, casillas y URL de la product page.
+  const ADS_KEY = 'pyl-ads';
+  const ads = {
+    load: () => { try { return JSON.parse(localStorage.getItem(ADS_KEY) || 'null'); } catch { return null; } },
+    save: (s) => { try { localStorage.setItem(ADS_KEY, JSON.stringify(s)); return true; } catch { return false; } },
+  };
+
   // Almacén clave-valor mínimo; cualquier fallo devuelve null en vez de lanzar.
   const idb = (() => {
     const open = () => new Promise((res, rej) => {
@@ -40,5 +47,5 @@
     return { get: (k) => tx('readonly', (s) => s.get(k)), set: (k, v) => tx('readwrite', (s) => s.put(v, k)) };
   })();
 
-  services.storage = { campaignMap, search, landing, idb };
+  services.storage = { campaignMap, search, landing, ads, idb };
 })();

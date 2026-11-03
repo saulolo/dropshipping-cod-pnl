@@ -12,8 +12,22 @@
   const counter = (k) => { const s = el('span', 'ld-count'); s.dataset.c = k; return s; };
   const button = (cls, text, onClick) => { const b = el('button', cls, text); b.type = 'button'; b.addEventListener('click', onClick); return b; };
 
+  // Al copiar, el mismo botón avisa: pasa a ✓ en verde un momento y vuelve (sin mensaje flotante).
+  // onCopy(texto, etiqueta) devuelve true si copió; si falla, quien copia avisa con el toast de error.
+  function copyFeedback(b, get, label, onCopy, doneText) {
+    const idle = b.textContent;
+    b.addEventListener('click', async () => {
+      if (!(await onCopy(get(), label))) return;
+      clearTimeout(b._t);
+      b.textContent = doneText; b.classList.add('copied');
+      b._t = setTimeout(() => { b.textContent = idle; b.classList.remove('copied'); }, 1400);
+    });
+    return b;
+  }
+
   // Botón copiar: copia el valor crudo del nodo (precio sin puntos) o su texto.
-  const copyBtn = (node, label, onCopy) => button('btn ghost sm ld-copy', '📋 Copiar', () => onCopy(node.dataset.raw || node.textContent, label));
+  const copyBtn = (node, label, onCopy) =>
+    copyFeedback(button('btn ghost sm ld-copy', '📋 Copiar'), () => node.dataset.raw || node.textContent, label, onCopy, '✓ Copiado');
 
   // Fila "etiqueta · valor · copiar".
   function valRow(label, k, onCopy, hint) {
@@ -136,16 +150,37 @@
     },
   };
 
+  // Tabla "campo → valor" tal como aparecen en la plataforma (s.fields), con copiar en cada valor.
+  function fieldTable(fields, onCopy) {
+    const w = el('div', 'ld-tool mt-s');
+    w.append(el('h4', null, 'Lo que pongo en cada campo'));
+    const dl = el('dl', 'ld-fx ld-fields-map');
+    fields.forEach(([k, v]) => {
+      const dd = el('dd'), val = el('span', null, v);
+      const b = copyFeedback(button('ld-mini', '📋'), () => v, k, onCopy, '✓');
+      b.title = 'Copiar'; b.setAttribute('aria-label', 'Copiar ' + k);
+      dd.append(val, b);
+      dl.append(el('dt', null, k), dd);
+    });
+    w.append(dl);
+    return w;
+  }
+
   // ---------- Detalle del paso activo ----------
+  // ctx: { done, key, fill, st, v, tools?, levels?, last? }. tools = herramientas extra (las de otra guía, ej. Meta Ads);
+  // levels = nombres de s.level; last = { label, view } del botón del último paso (por defecto, ir al Costeo).
   function stepDetail(node, s, i, total, ctx, on) {
     node.textContent = '';
+    const tools = { ...TOOLS, ...(ctx.tools || {}) }, last = ctx.last || { label: 'Ir al Costeo →', view: 'costeo' };
     const box = el('div', 'fl-detail pop');
     const top = el('div', 'row between');
     top.append(el('span', 'tag tb', `Paso ${i + 1} de ${total}`), el('span', 'small', s.where));
     box.append(top, el('h3', 'mt-s fl-h', s.t));
+    if (s.level && ctx.levels) box.append(el('span', 'tag tv', 'Nivel: ' + ctx.levels[s.level]));
     if (s.src) box.append(el('span', 'tag tv', s.src));
     if (s.p) box.append(seg('p', 'fl-p', s.p));
     if (s.warn) box.append(seg('div', 'note ny mt-s', ['⚠️ ', ...s.warn]));
+    if (s.fields) box.append(fieldTable(s.fields, on.copy));
 
     const list = el(s.ordered ? 'ol' : 'ul', 'ld-checks mt-s');
     s.items.forEach((it) => {
@@ -172,12 +207,12 @@
       });
       box.append(ps);
     }
-    (s.tool || []).forEach((k) => { const t = TOOLS[k](on, ctx.st, ctx.v); t.classList.add('mt'); box.append(t); });
+    (s.tool || []).forEach((k) => { const t = tools[k](on, ctx.st, ctx.v); t.classList.add('mt'); box.append(t); });
     if (s.tip) box.append(seg('div', 'note nn mt', ['💡 ', ...s.tip]));
 
     const nav = el('div', 'row mt');
     if (i > 0) nav.append(button('btn ghost sm', '← Anterior', on.prev));
-    nav.append(i < total - 1 ? button('btn sm', 'Siguiente paso →', on.next) : button('btn sm', 'Ir al Costeo →', () => on.go('costeo')));
+    nav.append(i < total - 1 ? button('btn sm', 'Siguiente paso →', on.next) : button('btn sm', last.label, () => on.go(last.view)));
     box.append(nav);
     node.append(box);
   }
@@ -213,5 +248,5 @@
     root.querySelectorAll('.ld-price').forEach((n) => { n.hidden = !p; });
   }
 
-  PYL.ui.landing = { stepList, stepDetail, progress, outputs };
+  PYL.ui.landing = { stepList, stepDetail, progress, outputs, valRow, input, copyBtn, copyFeedback, out, button, seg };
 })();
