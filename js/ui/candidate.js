@@ -259,7 +259,19 @@
     const x = new Date(t); return `${x.getDate()} ${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][x.getMonth()]}`;
   };
 
-  // rows: [{ p, score, level, comp, util, ml, status }]; sort actual; on = { open(id), sort(col) }.
+  // Íconos fijos (lápiz y papelera); trazo con currentColor para que tomen el color del botón.
+  const svg = (d) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const ICON = {
+    edit: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'),
+    del: svg('<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>'),
+  };
+  function iconBtn(cls, icon, label, onClick) {
+    const b = el('button', cls); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label);
+    b.innerHTML = icon; b.addEventListener('click', onClick);
+    return b;
+  }
+
+  // rows: [{ p, score, level, comp, util, ml, status }]; sort actual; on = { open(id), sort(col), del(id) }.
   function table(node, rows, total, sort, editingId, on) {
     node.textContent = '';
     if (!rows.length) {
@@ -270,22 +282,19 @@
     }
     const wrap = el('div', 'tbl-wrap cd-tbl'), t = el('table'), th = el('thead'), tb = el('tbody'), hr = el('tr');
     const arrow = (col) => (sort === col + '-desc' ? ' ↓' : sort === col + '-asc' ? ' ↑' : ' ↕');
-    [['#'], ['Foto'], ['Producto'], ['Estado'], ['Precio / utilidad'], ['MSP'], ['Competencia (7d)', 'comp'], ['Validado'], ['Score /8', 'score'], ['Fecha']].forEach(([h, col]) => {
+    [['Foto'], ['Producto'], ['Estado'], ['Precio / utilidad'], ['MSP'], ['Competencia (7d)', 'comp'], ['Validado'], ['Score', 'score'], ['']].forEach(([h, col]) => {
       const c = el('th');
       if (col) { const b = el('button', 'cd-sort', h + arrow(col)); b.type = 'button'; b.addEventListener('click', () => on.sort(col)); c.append(b); } else c.textContent = h;
       hr.append(c);
     });
     th.append(hr);
-    rows.forEach((r, i) => {
+    rows.forEach((r) => {
       const p = r.p, tr = el('tr', 'cd-tr' + (p.id === editingId ? ' editing' : '') + (p.status === 'ganador' ? ' win' : p.status === 'activo' ? ' act' : ''));
-      tr.tabIndex = 0; tr.title = 'Abrir en Mi candidato';
-      tr.addEventListener('click', () => on.open(p.id));
-      tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') on.open(p.id); });
 
       const ph = el('td');
       if (p.photo) { const im = el('img', 'cd-thumb'); im.src = p.photo; im.alt = ''; ph.append(im); } else ph.append(el('span', 'cd-thumb cd-thumb-empty', '📦'));
       const sup = (p.suppliers || []).filter((s) => s.name).map((s) => s.name);
-      const pn = el('td'); pn.append(el('b', 'cd-pname', p.name || 'Sin nombre'), el('small', 'cd-pmeta', [p.dropi ? 'ID ' + p.dropi : '', p.market, sup.length ? sup[0] + (sup.length > 1 ? ` +${sup.length - 1}` : '') : ''].filter(Boolean).join(' · ')));
+      const pn = el('td'); pn.append(el('b', 'cd-pname', p.name || 'Sin nombre'), el('small', 'cd-pmeta', [p.dropi ? 'ID ' + p.dropi : '', p.market, sup.length ? sup[0] + (sup.length > 1 ? ` +${sup.length - 1}` : '') : '', ago(p.id)].filter(Boolean).join(' · ')));
       const st = el('td'); st.append(r.status ? tag(r.status.tone, `${r.status.icon} ${r.status.t}`) : dash());
       const pr = el('td');
       if (r.util) {
@@ -298,7 +307,12 @@
       if (r.comp) { cp.append(tag(r.comp.tone, r.comp.t), el('small', 'cd-pmeta', `${nf(Number(p.sales7))} ventas`)); } else cp.append(dash());
       const va = el('td'); if ((p.validated || []).length) { const f = el('span', 'cd-flags'); p.validated.forEach((c) => f.append(el('span', null, c))); va.append(f); } else va.append(dash());
       const sc = el('td'); sc.append(el('span', 'cd-badge t-' + r.level.tone, `${r.score}/8`));
-      tr.append(el('td', 'soft', String(i + 1)), ph, pn, st, pr, msp, cp, va, sc, el('td', 'soft cd-date', ago(p.id)));
+      // Acciones de la fila como íconos: Editar (lo carga en Mi candidato) y Eliminar.
+      const ac = el('td'), acts = el('div', 'cd-acts'), name = p.name || 'este producto';
+      acts.append(iconBtn('cd-act edit', ICON.edit, `Editar ${name} en Mi candidato`, () => on.open(p.id)),
+        iconBtn('cd-act del', ICON.del, `Eliminar ${name} de la bitácora`, () => on.del(p.id)));
+      ac.append(acts);
+      tr.append(ph, pn, st, pr, msp, cp, va, sc, ac);
       tb.append(tr);
     });
     t.append(th, tb); wrap.append(t); node.append(wrap);

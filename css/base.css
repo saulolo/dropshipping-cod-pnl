@@ -625,16 +625,26 @@ details.acc .bd{padding:0 0 16px;color:var(--muted);font-size:14px}
 .cd-filter:hover{color:var(--ink);border-color:var(--line-2)}
 .cd-filter:focus-visible{outline:2px solid var(--b)}
 .cd-filter[aria-pressed="true"]{background:var(--o-bg);border-color:var(--o);color:var(--o-ink)}
-.cd-tbl table{min-width:1080px}
-.cd-tbl td{vertical-align:middle;padding:11px 13px}
-.cd-tr{cursor:pointer}
-.cd-tr:focus-visible{outline:2px solid var(--b);outline-offset:-2px}
+.cd-tbl table{min-width:860px}
+.cd-tbl th,.cd-tbl td{padding:10px 9px}
+.cd-tbl td{vertical-align:middle}
+.cd-tbl th:first-child,.cd-tbl td:first-child{padding-left:14px}
+.cd-tbl th:last-child,.cd-tbl td:last-child{padding-right:14px;text-align:right}
+.cd-acts{display:inline-flex;gap:6px}
+.cd-act{all:unset;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:9px;border:1px solid transparent;transition:filter .15s,border-color .15s,transform .15s}
+.cd-act:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.cd-act:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.cd-act.edit{background:var(--b-bg);color:var(--b-ink)}
+.cd-act.edit:hover{border-color:var(--b)}
+.cd-act.del{background:var(--r-bg);color:var(--r-ink)}
+.cd-act.del:hover{border-color:var(--r)}
+.cd-tbl .cd-pmeta{max-width:200px;overflow:hidden;text-overflow:ellipsis}
 .cd-tr.editing{background:var(--b-bg)!important}
 .cd-tr.win{box-shadow:inset 3px 0 0 var(--y)}.cd-tr.act{box-shadow:inset 3px 0 0 var(--g)}
 .cd-sort{all:unset;cursor:pointer}
 .cd-sort:hover{color:var(--ink)}
 .cd-thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;display:grid;place-items:center;background:var(--bg-2);border:1px solid var(--line)}
-.cd-pname{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.cd-pname{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
 .cd-pmeta{display:block;font-size:11.5px;color:var(--soft);margin-top:2px;white-space:nowrap}
 .cd-price{font-weight:700;color:var(--ink);white-space:nowrap;display:flex;gap:6px;align-items:center}
 .cd-price .tag{font-size:10px;letter-spacing:.02em}
@@ -645,7 +655,6 @@ details.acc .bd{padding:0 0 16px;color:var(--muted);font-size:14px}
 .cd-badge.t-b{background:var(--b-bg);color:var(--b-ink);border-color:var(--b)}
 .cd-badge.t-o{background:var(--o-bg);color:var(--o-ink);border-color:var(--o)}
 .cd-badge.t-r{background:var(--r-bg);color:var(--r-ink);border-color:var(--r)}
-.cd-date{white-space:nowrap;font-size:12.5px}
 .cd-emptybox{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:34px 16px;border:1px dashed var(--line-2);border-radius:16px;color:var(--muted);font-size:13.5px}
 .cd-emptybox b{color:var(--ink);font-size:16px}
 /* Estadísticas */

@@ -124,13 +124,16 @@
     loadDraft({}, null);
   }
 
-  async function del() {
-    const p = S.log.find((x) => x.id === S.editingId); if (!p) return;
+  // id = producto de la bitácora (botón de la fila); sin id, el que estoy editando.
+  // Si borro el que está abierto en Mi candidato, el formulario queda limpio; si no, no lo toco.
+  async function del(id) {
+    const p = S.log.find((x) => x.id === (typeof id === 'string' ? id : S.editingId)); if (!p) return;
     const r = await PYL.ui.feedback.ask('Eliminar producto', `¿Elimino "${p.name || 'Sin nombre'}" de la bitácora? No se puede deshacer.`, [{ r: 'del', label: 'Eliminar' }]);
     if (r !== 'del') return;
     S.log = S.log.filter((x) => x.id !== p.id);
-    loadDraft({}, null);
-    toast('Producto eliminado.', 'ok');
+    if (p.id === S.editingId) loadDraft({}, null);
+    else { persist(); renderLog(); }
+    toast(`Eliminé ${p.name || 'el producto'} de la bitácora.`, 'ok');
   }
 
   function duplicate() {
@@ -192,7 +195,7 @@
       return { p, score: s, level: C.scoreLevel(s), comp: C.competition(p.sales7), util: u, ml: u && u.margen != null ? C.marginLevel(u.margen) : null, status: status[p.status], msp: msp[C.mspLevel(p.msp)] };
     });
     K.table($('#b-log'), rows, S.log.length, S.sort, S.editingId, {
-      open,
+      open, del,
       sort: (col) => { S.sort = S.sort === col + '-desc' ? col + '-asc' : col + '-desc'; persist(); renderLog(); },
     });
   }
@@ -205,7 +208,7 @@
   $('#b-new').addEventListener('click', clear);
   $('#b-costear').addEventListener('click', () => costear(S.draft));
   $('#b-dup').addEventListener('click', duplicate);
-  $('#b-del').addEventListener('click', del);
+  $('#b-del').addEventListener('click', () => del());
   // Los enlaces de la ruta abren la sección si está contraída.
   document.querySelectorAll('.b-route a[href^="#"]').forEach((a) => a.addEventListener('click', () => { const t = $(a.getAttribute('href')); if (t && t.tagName === 'DETAILS') t.open = true; }));
   $('#b-q').addEventListener('input', (e) => { S.q = e.target.value; renderLog(); });
