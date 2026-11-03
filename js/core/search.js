@@ -394,9 +394,28 @@
     };
   }
 
+  // ¿Limpiar el formulario borra algo que no está en la bitácora? Compara el borrador con su versión
+  // guardada (saved = producto de la bitácora o null), ignorando campos vacíos, id y fecha.
+  function clean(p) {
+    const out = {};
+    Object.keys(p || {}).sort().forEach((k) => {
+      if (k === 'id' || k === 'updatedAt') return;
+      let v = k === 'msp' ? mspLevel(p[k]) : p[k];
+      if (Array.isArray(v)) v = v.filter((x) => x && (typeof x !== 'object' || Object.values(x).some((y) => y !== '' && y != null)));
+      else if (v && typeof v === 'object') v = Object.fromEntries(Object.entries(v).filter(([, y]) => y));
+      if (v === '' || v == null || v === false || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Object.keys(v).length)) return;
+      out[k] = v;
+    });
+    return out;
+  }
+  const unsaved = (draft, saved) => {
+    const d = clean(draft);
+    return Object.keys(d).length > 0 && JSON.stringify(d) !== JSON.stringify(clean(saved));
+  };
+
   core.search = {
     LIMITS, STAGES, stage, stageRange, PYRAMID, VDO, WINNER, WINNER_GROUPS, winnerCheck, FLOW, TOOLS, RESEARCH, MISTAKES,
     COUNTRIES, STATUS, MSP, mspLevel, VALUE, SATURATION, COST_DEFAULTS, SCORE_MAX, SCORE_LEVELS, FILTERS,
-    unitCost, priceFor, marginLevel, competition, ageMonths, scoreParts, score, scoreLevel, evaluate, list, stats,
+    unitCost, priceFor, marginLevel, competition, ageMonths, scoreParts, score, scoreLevel, evaluate, list, stats, unsaved,
   };
 })();

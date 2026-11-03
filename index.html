@@ -191,36 +191,13 @@
   </div>
 
   <nav class="b-route" aria-label="Pasos de la búsqueda">
-    <a href="#b-sec-win"><span>1</span>Producto ganador</a>
-    <a href="#b-sec-vdo"><span>2</span>Estrategia VDO</a>
-    <a href="#b-sec-flow"><span>3</span>Flujograma DropKiller</a>
-    <a href="#b-cand"><span>4</span>Mi candidato</a>
-    <a href="#b-sec-log"><span>5</span>Bitácora</a>
+    <a href="#b-sec-flow"><span>1</span>Flujograma DropKiller</a>
+    <a href="#b-cand"><span>2</span>Mi candidato</a>
+    <a href="#b-sec-log"><span>3</span>Bitácora</a>
+    <a href="#b-sec-win"><span>4</span>Producto ganador</a>
+    <a href="#b-sec-vdo"><span>5</span>Estrategia VDO</a>
     <button type="button" data-go="costeo"><span>6</span>Costeo →</button>
   </nav>
-
-  <details class="card mt b-sec" id="b-sec-win">
-    <summary>
-      <div><h2>¿Es un producto ganador?</h2><p class="muted b-sub">Lo primero que reviso. Toco lo que mi candidato cumple: se guarda con él en la bitácora.</p></div>
-    </summary>
-    <div class="b-win mt" id="b-winner"></div>
-  </details>
-
-  <details class="card mt b-sec" id="b-sec-vdo">
-    <summary>
-      <div><h2>Estrategia VDO</h2><p class="muted b-sub">Las tres reglas antes de encender una campaña, y dónde pongo el esfuerzo.</p></div>
-    </summary>
-    <div class="b-vdos mt" id="b-vdo"></div>
-    <div class="b-pm-sec">
-      <h3>La pirámide del producto ganador</h3>
-      <p class="muted b-sub">Dónde pongo el esfuerzo: abajo está la mayor responsabilidad. Toco un nivel y luego cada parte.</p>
-      <div class="pm mt" id="b-pyr-map"></div>
-    </div>
-    <details class="acc mt b-life">
-      <summary>Ciclo de vida del producto <small class="soft">por ventas totales sumando todos los proveedores · solo entro en validación</small></summary>
-      <div class="bd"><div class="b-stages" id="b-stages"></div></div>
-    </details>
-  </details>
 
   <details class="card mt b-flow-card b-sec" id="b-sec-flow">
     <summary>
@@ -239,7 +216,10 @@
         <h2 id="b-cand-title">Mi candidato</h2>
         <p class="muted b-sub">Anoto lo que veo en DropKiller. El score, la utilidad y el semáforo se actualizan solos.</p>
       </div>
-      <span class="tag tv">Mi score · datos de NovaSociety</span>
+      <div class="row">
+        <span class="tag tv">Mi score · datos de NovaSociety</span>
+        <button class="btn ghost sm" id="b-new" type="button" title="Vacía el formulario para ingresar otro producto">🧹 Limpiar formulario</button>
+      </div>
     </div>
     <div class="cd-layout">
       <div class="cd-form" id="b-form"></div>
@@ -256,7 +236,6 @@
         <div class="cd-actions">
           <button class="btn" id="b-save" type="button">Guardar en bitácora</button>
           <button class="btn ghost" id="b-costear" type="button">Costear →</button>
-          <button class="btn ghost sm" id="b-new" type="button">Nuevo / limpiar</button>
           <button class="btn ghost sm" id="b-dup" type="button" hidden>Duplicar</button>
           <button class="btn ghost sm b-del" id="b-del" type="button" hidden>Eliminar</button>
         </div>
@@ -283,6 +262,29 @@
     </div>
     <div id="b-stats" hidden></div>
   </div>
+
+  <details class="card mt b-sec" id="b-sec-win">
+    <summary>
+      <div><h2>¿Es un producto ganador?</h2><p class="muted b-sub">Lo primero que reviso. Toco lo que mi candidato cumple: se guarda con él en la bitácora.</p></div>
+    </summary>
+    <div class="b-win mt" id="b-winner"></div>
+  </details>
+
+  <details class="card mt b-sec" id="b-sec-vdo">
+    <summary>
+      <div><h2>Estrategia VDO</h2><p class="muted b-sub">Las tres reglas antes de encender una campaña, y dónde pongo el esfuerzo.</p></div>
+    </summary>
+    <div class="b-vdos mt" id="b-vdo"></div>
+    <div class="b-pm-sec">
+      <h3>La pirámide del producto ganador</h3>
+      <p class="muted b-sub">Dónde pongo el esfuerzo: abajo está la mayor responsabilidad. Toco un nivel y luego cada parte.</p>
+      <div class="pm mt" id="b-pyr-map"></div>
+    </div>
+    <details class="acc mt b-life">
+      <summary>Ciclo de vida del producto <small class="soft">por ventas totales sumando todos los proveedores · solo entro en validación</small></summary>
+      <div class="bd"><div class="b-stages" id="b-stages"></div></div>
+    </details>
+  </details>
 
   <details class="acc mt-l">
     <summary>Otras herramientas de búsqueda</summary>

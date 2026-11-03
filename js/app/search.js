@@ -141,6 +141,23 @@
     toast('Dupliqué el producto: ahora edito la copia.', 'ok');
   }
 
+  // Deja el formulario vacío y sale de "Editando" para cargar otro producto.
+  // Solo pregunta si hay algo que se perdería (no está en la bitácora o tiene cambios sin guardar).
+  async function clear() {
+    const editing = S.log.find((x) => x.id === S.editingId) || null;
+    if (C.unsaved(S.draft, editing)) {
+      const r = await PYL.ui.feedback.ask('Limpiar formulario',
+        editing ? `"${editing.name || 'Sin nombre'}" tiene cambios sin guardar. ¿Limpio el formulario igual? Lo que está en la bitácora queda como estaba.`
+          : 'Lo que escribí no está guardado en la bitácora. ¿Limpio el formulario igual?',
+        [{ r: 'clear', label: 'Limpiar' }]);
+      if (r !== 'clear') return;
+    }
+    loadDraft({}, null);
+    $('#b-cand').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => $('#b-f-name').focus({ preventScroll: true }), 350);
+    toast('Formulario limpio: listo para un producto nuevo.', 'ok');
+  }
+
   function open(id) {
     const p = S.log.find((x) => x.id === id); if (!p) return;
     loadDraft(JSON.parse(JSON.stringify(p)), id);
@@ -185,7 +202,7 @@
   K.fill($('#b-form'), S.draft);
   mirror(S.draft);
   $('#b-save').addEventListener('click', save);
-  $('#b-new').addEventListener('click', () => loadDraft({}, null));
+  $('#b-new').addEventListener('click', clear);
   $('#b-costear').addEventListener('click', () => costear(S.draft));
   $('#b-dup').addEventListener('click', duplicate);
   $('#b-del').addEventListener('click', del);
