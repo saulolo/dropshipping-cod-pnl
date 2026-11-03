@@ -195,7 +195,7 @@
     <a href="#b-cand"><span>2</span>Mi candidato</a>
     <a href="#b-sec-log"><span>3</span>Bitácora</a>
     <a href="#b-sec-win"><span>4</span>Producto ganador</a>
-    <a href="#b-sec-vdo"><span>5</span>Estrategia VDO</a>
+    <a href="#b-sec-strat"><span>5</span>Estrategias de búsqueda</a>
     <button type="button" data-go="costeo"><span>6</span>Costeo →</button>
   </nav>
 
@@ -270,20 +270,32 @@
     <div class="b-win mt" id="b-winner"></div>
   </details>
 
-  <details class="card mt b-sec" id="b-sec-vdo">
+  <details class="card mt b-sec" id="b-sec-strat">
     <summary>
-      <div><h2>Estrategia VDO</h2><p class="muted b-sub">Las tres reglas antes de encender una campaña, y dónde pongo el esfuerzo.</p></div>
+      <div><h2>Estrategias de búsqueda</h2><p class="muted b-sub">Dos caminos para encontrar un producto. Elijo uno y lo sigo paso a paso.</p></div>
     </summary>
-    <div class="b-vdos mt" id="b-vdo"></div>
-    <div class="b-pm-sec">
-      <h3>La pirámide del producto ganador</h3>
-      <p class="muted b-sub">Dónde pongo el esfuerzo: abajo está la mayor responsabilidad. Toco un nivel y luego cada parte.</p>
-      <div class="pm mt" id="b-pyr-map"></div>
+    <div class="st-tabs mt" id="b-strats" role="group" aria-label="Estrategia de búsqueda"></div>
+
+    <div class="st-panel" id="b-st-vdo">
+      <h3 class="st-h">Estrategia VDO</h3>
+      <p class="muted b-sub">Las tres reglas antes de encender una campaña, y dónde pongo el esfuerzo.</p>
+      <div class="b-vdos mt" id="b-vdo"></div>
+      <div class="b-pm-sec">
+        <h3>La pirámide del producto ganador</h3>
+        <p class="muted b-sub">Dónde pongo el esfuerzo: abajo está la mayor responsabilidad. Toco un nivel y luego cada parte.</p>
+        <div class="pm mt" id="b-pyr-map"></div>
+      </div>
+      <details class="acc mt b-life">
+        <summary>Ciclo de vida del producto <small class="soft">por ventas totales sumando todos los proveedores · solo entro en validación</small></summary>
+        <div class="bd"><div class="b-stages" id="b-stages"></div></div>
+      </details>
     </div>
-    <details class="acc mt b-life">
-      <summary>Ciclo de vida del producto <small class="soft">por ventas totales sumando todos los proveedores · solo entro en validación</small></summary>
-      <div class="bd"><div class="b-stages" id="b-stages"></div></div>
-    </details>
+
+    <div class="st-panel" id="b-st-prov" hidden>
+      <h3 class="st-h">Estrategia por proveedor</h3>
+      <p class="muted b-sub">Del catálogo de un proveedor confiable a un producto validado afuera. Toco cada fase para ver qué hago.</p>
+      <div class="ps mt" id="b-prov"></div>
+    </div>
   </details>
 
   <details class="acc mt-l">

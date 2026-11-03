@@ -8,7 +8,11 @@
   // Texto con negritas a partir de segmentos: string plano o { b: 'texto en negrita' }.
   const rich = (node, segments) => {
     node.textContent = '';
-    segments.forEach((s) => node.append(typeof s === 'string' ? s : el('b', null, s.b)));
+    segments.forEach((s) => {
+      if (typeof s === 'string') node.append(s);
+      else if (s.href) { const a = el('a', 'lnk', s.a); a.href = s.href; a.target = '_blank'; a.rel = 'noopener'; node.append(a); }
+      else node.append(el('b', null, s.b));
+    });
   };
 
   // Indicador de estado (punto + texto) de las tarjetas KPI. Sin texto queda oculto.

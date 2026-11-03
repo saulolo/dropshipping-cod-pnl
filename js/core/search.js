@@ -18,6 +18,8 @@
     creatives: 6,                                // creativos mínimos para testear
     months: '3 a 6',                             // fecha de creación: últimos meses
     maxMonths: 6,
+    // Estrategia por proveedor: ventas máximas del producto (solo ese proveedor) y cuántos analizo.
+    byProv: { v7: 50, v30: 500, analyze: { min: 15, max: 20 } },
   };
 
   // Ciclo de vida por ventas totales (hasta = inclusive). Sin huecos entre etapas.
@@ -91,6 +93,52 @@
     { k: 'O', t: 'Oferta', rule: ['Menos de ', { b: `${LIMITS.advertisers} anunciantes activos` }, ' (anunciantes, no anuncios). Miro si mandan a landing o a WhatsApp.'],
       avoid: 'Copiar el mismo ángulo: creo ángulos para públicos distintos.' },
   ];
+
+  // Estrategias de búsqueda: dos caminos para llegar a un candidato. La VDO arranca por las ventas
+  // en validación; la de proveedor arranca por el catálogo de proveedores confiables.
+  const STRATEGIES = [
+    { k: 'vdo', t: 'Estrategia VDO', icon: '🎯', d: 'Parto de productos que ya están en validación y reviso que no estén saturados.' },
+    { k: 'prov', t: 'Estrategia por proveedor', icon: '🏭', d: 'Parto de proveedores confiables y busco productos que casi nadie está vendiendo.' },
+  ];
+
+  // Estrategia por proveedor: 4 fases. out = lo que me queda al terminar la fase (embudo).
+  const BP = LIMITS.byProv;
+  const FASTMOSS = 'https://www.fastmoss.com/es';
+  const BY_PROVIDER = {
+    suppliers: [
+      { t: 'Botania' }, { t: 'Nibresma' }, { t: 'Bodega de Belleza Int' },
+    ],
+    allies: [{ t: 'Goldbox' }],
+    steps: [
+      { k: 'filtrar', icon: '🏭', t: 'Filtrar por proveedor', where: 'DropKiller → Productos → Proveedor', out: 'Un proveedor',
+        p: ['Entro a ', { b: 'DropKiller' }, ', en la sección de ', { b: 'Productos' }, ', y escribo uno de estos proveedores. Veo todo su catálogo.'] },
+      { k: 'analizar', icon: '🔎', t: 'Analizar productos', where: 'Catálogo del proveedor en DropKiller', out: `${BP.analyze.min} a ${BP.analyze.max} productos`,
+        p: ['Busco productos ', { b: 'de interés' }, ' que casi nadie está vendiendo todavía. Me quedo con una lista corta.'],
+        rules: [
+          { big: '0', unit: 'ventas', t: 'Sin ventas, pero de interés', d: ['Productos que ', { b: 'nadie ha empezado a vender' }, ' y que me llaman la atención.'] },
+          { big: `< ${n(BP.v7)}`, unit: 'en 7 días', t: 'Cuando voy a testear', d: ['Menos de ', { b: `${n(BP.v7)} ventas` }, ' en los últimos 7 días.'] },
+          { big: `< ${n(BP.v30)}`, unit: 'en 30 días', t: 'Cuando voy a testear', d: ['Y menos de ', { b: `${n(BP.v30)} ventas` }, ' en los últimos 30 días.'] },
+        ],
+        note: ['Analizo de ', { b: `${BP.analyze.min} a ${BP.analyze.max} productos` }, ' antes de pasar a validar.'] },
+      { k: 'validar', icon: '🌎', t: 'Validar en otros países', where: 'FastMoss · TikTok Shop en más de 20 países', out: 'Los validados afuera',
+        p: ['De mi lista, miro cuáles ', { b: 'ya se venden en otros países' }, ' (Estados Unidos, México, Reino Unido…). En ', { a: 'FastMoss', href: FASTMOSS }, ' veo sus ventas, creativos, contenido y métricas.'],
+        link: { t: 'Abrir FastMoss ↗', href: FASTMOSS },
+        chain: [
+          { k: 'pais', icon: '📍', t: 'Seleccionar país objetivo', d: ['Configuro el panel de FastMoss con el ', { b: 'país específico' }, ' que quiero mirar.'] },
+          { k: 'demanda', icon: '📈', t: 'Analizar volumen de ventas', d: ['Busco el producto o la categoría. ¿La ', { b: 'curva de ventas está subiendo' }, '? ¿El precio de allá contra mi costo deja margen?'] },
+          { k: 'saturacion', icon: '🏪', t: 'Estudiar competencia local', d: ['¿Cuántas tiendas lo venden? ', { b: 'Ventas altas y pocos competidores' }, ' = ventana de oportunidad.'] },
+          { k: 'marketing', icon: '🎬', t: 'Revisar anuncios y creadores', d: ['Miro los ', { b: 'videos y anuncios populares' }, ' de ese mercado: me dan la pauta para replicar o mejorar mis creativos.'] },
+        ] },
+      { k: 'testear', icon: '🧪', t: 'Testear', where: 'DropKiller → buscar por nombre', out: 'Mi candidato',
+        p: ['Con el producto validado, vuelvo a ', { b: 'DropKiller' }, ' y lo busco ', { b: 'por nombre' }, '.'],
+        list: [
+          ['Cuento ', { b: 'cuántos proveedores' }, ' lo tienen.'],
+          ['Cuento ', { b: 'cuántos anuncios' }, ' tiene.'],
+          ['Busco ', { b: 'creativos' }, ' y su ', { b: 'product page' }, '.'],
+          ['Lo anoto en ', { b: 'Mi candidato' }, ' y paso por el ', { b: 'Costeo' }, ' antes de testear con los cortes 20K / 30K / 40K.'],
+        ] },
+    ],
+  };
 
   // Producto ganador: lo primero que reviso de un candidato. must = sin esto no lo puedo vender.
   const WINNER_GROUPS = [
@@ -175,7 +223,7 @@
     { k: 'tuwinner', t: 'TuWinner', d: ['Lo más vendido en Colombia. Descarto los monstruos y busco los que, en 7 días, tienen ', { b: 'menos de 100' }, ' ventas.'] },
     { k: 'adlib', t: 'Biblioteca de anuncios de Meta', d: ['Qué está corriendo la competencia, sus copys y páginas. Filtro ', { b: 'más de 7 días activos' }, '.'] },
     { k: 'tiktok', t: 'TikTok Shop', d: ['Filtro por categoría (ej. salud): poco competido y muy vendido en USA, y confirmo que haya proveedor local.'] },
-    { k: 'proveedor', t: 'Dropi por proveedor', d: ['Busco directo en proveedores grandes (ej. GoldBox). Con GoldBox, al llegar a unas ', { b: '5 ventas diarias' }, ', negocio descuento y privatizar stock.'] },
+    { k: 'proveedor', t: 'Dropi por proveedor', d: ['Busco directo en proveedores grandes (ej. Goldbox). Con Goldbox, al llegar a unas ', { b: '5 ventas diarias' }, ', negocio descuento y privatizar stock.'] },
   ];
 
   // Investigación del problema, antes o junto a DropKiller.
@@ -414,7 +462,7 @@
   };
 
   core.search = {
-    LIMITS, STAGES, stage, stageRange, PYRAMID, VDO, WINNER, WINNER_GROUPS, winnerCheck, FLOW, TOOLS, RESEARCH, MISTAKES,
+    LIMITS, STAGES, stage, stageRange, PYRAMID, VDO, STRATEGIES, BY_PROVIDER, WINNER, WINNER_GROUPS, winnerCheck, FLOW, TOOLS, RESEARCH, MISTAKES,
     COUNTRIES, STATUS, MSP, mspLevel, VALUE, SATURATION, COST_DEFAULTS, SCORE_MAX, SCORE_LEVELS, FILTERS,
     unitCost, priceFor, marginLevel, competition, ageMonths, scoreParts, score, scoreLevel, evaluate, list, stats, unsaved,
   };

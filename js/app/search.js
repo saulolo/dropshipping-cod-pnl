@@ -18,6 +18,8 @@
     filter: saved.filter || 'todos',
     q: '',
     sort: saved.sort || null,
+    strat: saved.strat || 'vdo',    // estrategia de búsqueda abierta: 'vdo' | 'prov'
+    provStep: saved.provStep || 0,  // fase abierta de la estrategia por proveedor
   });
   if (S.editingId && !S.log.some((p) => p.id === S.editingId)) S.editingId = null;
 
@@ -57,6 +59,19 @@
   const pyr = { lvl: 'pro', item: null };
   function renderPyramid() {
     U.pyramidMap($('#b-pyr-map'), C.PYRAMID, pyr, (lvl, item) => { pyr.lvl = lvl; pyr.item = item; renderPyramid(); });
+  }
+
+  // ---------- Estrategias de búsqueda ----------
+  function renderStrategy() {
+    const k = C.STRATEGIES.some((s) => s.k === S.strat) ? S.strat : 'vdo';
+    U.strategyTabs($('#b-strats'), C.STRATEGIES, k, (x) => { S.strat = x; persist(); renderStrategy(); });
+    $('#b-st-vdo').hidden = k !== 'vdo'; $('#b-st-prov').hidden = k !== 'prov';
+    if (k !== 'prov') return;
+    const i = Math.min(Math.max(0, S.provStep), C.BY_PROVIDER.steps.length - 1);
+    U.byProvider($('#b-prov'), C.BY_PROVIDER, i, {
+      select: (j) => { S.provStep = j; persist(); renderStrategy(); },
+      cand: () => { $('#b-cand').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => $('#b-f-name').focus({ preventScroll: true }), 350); },
+    });
   }
 
   // ---------- Mi candidato ----------
@@ -218,5 +233,5 @@
   U.cards($('#b-tools'), C.TOOLS);
   U.cards($('#b-research'), C.RESEARCH);
   U.mistakes($('#b-mistakes'), C.MISTAKES);
-  renderWinner(); renderPyramid(); renderFlow(); renderLive(); renderLog();
+  renderWinner(); renderPyramid(); renderStrategy(); renderFlow(); renderLive(); renderLog();
 })();

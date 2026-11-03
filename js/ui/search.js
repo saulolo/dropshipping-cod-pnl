@@ -1,5 +1,5 @@
-// Pestaña Buscar producto: pinta el flujograma de DropKiller, el semáforo VDO del candidato, el ciclo de vida
-// y las fichas de consulta. El formulario y la bitácora están en ui/candidate.js. Recibe datos y callbacks.
+// Pestaña Buscar producto: pinta el flujograma de DropKiller, el semáforo VDO del candidato, el ciclo de vida,
+// las estrategias de búsqueda (VDO y por proveedor) y las fichas de consulta. El formulario y la bitácora están en ui/candidate.js. Recibe datos y callbacks.
 (() => {
   const PYL = globalThis.PYL;
   const { el, rich } = PYL.ui.dom;
@@ -225,6 +225,96 @@
     node.append(fig, side);
   }
 
+  // ---------- Estrategias de búsqueda ----------
+  // Selector de estrategia: tarjetas grandes que se comportan como pestañas. onSelect(k).
+  function strategyTabs(node, list, active, onSelect) {
+    node.textContent = '';
+    list.forEach((s) => {
+      const on = s.k === active;
+      const b = el('button', 'st-tab' + (on ? ' on' : ''));
+      b.type = 'button'; b.setAttribute('aria-pressed', String(on));
+      const tx = el('span', 'st-tx'); tx.append(el('b', null, s.t), el('small', null, s.d));
+      b.append(el('span', 'st-ic', s.icon), tx);
+      b.addEventListener('click', () => onSelect(s.k));
+      node.append(b);
+    });
+  }
+
+  // Estrategia por proveedor: fases conectadas (embudo) y el detalle de la fase elegida.
+  // i = fase abierta. on = { select(i), cand() }.
+  function byProvider(node, data, i, on) {
+    node.textContent = '';
+    const steps = data.steps, s = steps[i];
+
+    const ol = el('ol', 'ps-steps');
+    steps.forEach((x, j) => {
+      const li = el('li', 'ps-st' + (j === i ? ' on' : '') + (j < i ? ' past' : ''));
+      const b = el('button', 'ps-node');
+      b.type = 'button'; b.setAttribute('aria-pressed', String(j === i));
+      const ic = el('span', 'ps-ic', x.icon); ic.append(el('span', 'ps-n', String(j + 1)));
+      b.append(ic, el('b', null, x.t), el('small', 'ps-out', x.out));
+      b.addEventListener('click', () => on.select(j));
+      li.append(b); ol.append(li);
+    });
+    node.append(ol);
+
+    const box = el('div', 'ps-det pop');
+    const top = el('div', 'row between');
+    top.append(el('span', 'tag tb', `Fase ${i + 1} de ${steps.length}`), el('span', 'small', s.where));
+    box.append(top, el('h3', 'mt-s fl-h', s.icon + ' ' + s.t), seg('fl-p', s.p));
+
+    if (s.k === 'filtrar') {
+      const group = (title, list, ally) => {
+        const g = el('div', 'ps-sg');
+        const h = el('div', 'ps-sgh'); h.append(el('b', null, title));
+        if (ally) h.append(el('span', 'tag ty', 'Plus'));
+        g.append(h);
+        const grid = el('div', 'ps-sup');
+        list.forEach((p) => {
+          const c = el('div', 'ps-sc' + (ally ? ' ally' : ''));
+          c.append(el('span', 'ps-av', p.t.charAt(0)), el('b', null, p.t));
+          grid.append(c);
+        });
+        g.append(grid); return g;
+      };
+      box.append(group('Proveedores', data.suppliers), group('Proveedores aliados', data.allies, true));
+    }
+    if (s.rules) {
+      const grid = el('div', 'ps-rules');
+      s.rules.forEach((r) => {
+        const c = el('div', 'ps-rule');
+        const big = el('div', 'ps-big'); big.append(el('b', null, r.big), el('small', null, r.unit));
+        c.append(big, el('span', 'ps-rt', r.t), seg('ps-rd', r.d));
+        grid.append(c);
+      });
+      box.append(grid);
+    }
+    if (s.note) { const nt = el('div', 'note nb mt-s'); rich(nt, s.note); box.append(nt); }
+    if (s.chain) {
+      const ch = el('ol', 'ps-chain');
+      s.chain.forEach((c, j) => {
+        const li = el('li', 'ps-cs');
+        const h = el('div', 'ps-csh'); h.append(el('span', 'ps-ci', c.icon), el('small', null, 'Paso ' + (j + 1)));
+        li.append(h, el('b', null, c.t), seg('ps-cd', c.d));
+        ch.append(li);
+      });
+      box.append(ch);
+    }
+    if (s.list) {
+      const ul = el('ul', 'fl-list');
+      s.list.forEach((x) => { const li = el('li'); rich(li, x); ul.append(li); });
+      box.append(ul);
+    }
+
+    const acts = el('div', 'row mt');
+    if (s.link) { const a = el('a', 'btn ghost sm', s.link.t); a.href = s.link.href; a.target = '_blank'; a.rel = 'noopener'; acts.append(a); }
+    if (i > 0) { const pv = el('button', 'btn ghost sm', '← Fase anterior'); pv.type = 'button'; pv.addEventListener('click', () => on.select(i - 1)); acts.append(pv); }
+    if (i < steps.length - 1) { const nx = el('button', 'btn sm', 'Siguiente fase →'); nx.type = 'button'; nx.addEventListener('click', () => on.select(i + 1)); acts.append(nx); }
+    else { const c = el('button', 'btn sm', 'Anotarlo en Mi candidato ↑'); c.type = 'button'; c.addEventListener('click', on.cand); acts.append(c); }
+    box.append(acts);
+    node.append(box);
+  }
+
   // ---------- Fichas de consulta ----------
   function vdo(node, items) {
     node.textContent = '';
@@ -253,5 +343,5 @@
     node.append(ol);
   }
 
-  PYL.ui.search = { flowList, flowStep, progress, result, stages, winner, vdo, pyramidMap, cards, mistakes };
+  PYL.ui.search = { flowList, flowStep, progress, result, stages, winner, vdo, strategyTabs, byProvider, pyramidMap, cards, mistakes };
 })();
